@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "UserDexProfile": {
+      "title": "UserDexProfile",
+      "description": "Stores a trainer's Pokédex catching progress, regional variant catches, Living Box variant selections, Living Box game origin selections, per-game catches, owned games, shiny progress, Living Dex box state, owned DLC expansions, specimen inventory instances with POKEIDs, and public stats page visibility.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the profile owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "trainerName": {
+          "type": "string",
+          "description": "Display name or custom trainer handle.",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "activeGameFilter": {
+          "type": "string",
+          "description": "Last selected game filter.",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Whether the trainer has enabled a public shareable Living Dex stats page."
+        },
+        "caughtIds": {
+          "type": "array",
+          "description": "Bounded list of caught National Pokédex IDs (1 to 1025)."
+        },
+        "shinyIds": {
+          "type": "array",
+          "description": "Bounded list of caught Shiny National Pokédex IDs (1 to 1025)."
+        },
+        "livingIds": {
+          "type": "array",
+          "description": "Bounded list of Living Dex boxed National Pokédex IDs (1 to 1025)."
+        },
+        "caughtVariants": {
+          "type": "array",
+          "description": "Bounded list of caught regional variation IDs (e.g., 37:base, 37:alola)."
+        },
+        "boxSelectedVariants": {
+          "type": "array",
+          "description": "Bounded list of selected regional variation IDs displayed in Living Dex Box slots."
+        },
+        "boxSelectedGames": {
+          "type": "array",
+          "description": "Bounded list of single selected game origin per Pokémon for Living Dex Box slots (e.g., 25:swsh)."
+        },
+        "ownedGames": {
+          "type": "array",
+          "description": "Bounded list of game IDs (GBA Gen III to Switch Gen IX + Pokémon GO) owned by the trainer."
+        },
+        "ownedDlcs": {
+          "type": "array",
+          "description": "Bounded list of DLC identifiers owned by the trainer."
+        },
+        "gameCatches": {
+          "type": "object",
+          "description": "Map of gameId to bounded array of caught National Dex IDs in that specific game."
+        },
+        "inventory": {
+          "type": "array",
+          "description": "Bounded list of caught specimen instances with unique 12-char POKEIDs, levels, nicknames, origin game or HOME gift, and trade status."
+        },
+        "caughtCount": {
+          "type": "integer",
+          "description": "Total number of standard Pokémon caught."
+        },
+        "shinyCount": {
+          "type": "integer",
+          "description": "Total number of shiny Pokémon caught."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was first created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was last updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "trainerName",
+        "activeGameFilter",
+        "isPublic",
+        "caughtIds",
+        "shinyIds",
+        "livingIds",
+        "caughtVariants",
+        "boxSelectedVariants",
+        "boxSelectedGames",
+        "ownedGames",
+        "ownedDlcs",
+        "gameCatches",
+        "inventory",
+        "caughtCount",
+        "shinyCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/userDexProfiles/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserDexProfile"
+      },
+      "description": "Per-user Pokédex tracking document indexed by Firebase Auth UID, with optional opt-in public read for sharing Living Dex stats."
+    }
+  }
+}
