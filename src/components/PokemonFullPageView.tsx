@@ -97,14 +97,16 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
   const activeBoxVariant =
     variations.find((v) => v.variantId === selectedBoxVariantId) || variations[0];
 
-  const availableCatchGames = GAMES.filter((g) => {
-    const st = pokemon.availability[g.id].status;
-    return st === 'base' || st === 'dlc';
-  });
+  // User requirement: If a user has not marked a game as owned, hide it from the user on the Pokemon's page.
+  const userOwnedEncounterGames = useMemo(() => {
+    return GAMES.filter((g) => ownedGames.includes(g.id));
+  }, [ownedGames]);
 
   const isExclusiveLabel = (exclusiveText: string) =>
-    exclusiveText.toLowerCase().includes('exclusive') ||
-    exclusiveText.toLowerCase().includes('only');
+    exclusiveText &&
+    exclusiveText !== 'None' &&
+    (exclusiveText.toLowerCase().includes('exclusive') ||
+      exclusiveText.toLowerCase().includes('only'));
 
   return (
     <div className="flex flex-col gap-6">
@@ -220,7 +222,7 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
                 <strong className={isCaught ? 'text-emerald-400' : 'text-slate-500'}>
                   {isCaught ? 'CAUGHT' : 'UNCAUGHT'}
                 </strong>{' '}
-                ({pokemonInstances.length} logged specimens)
+                ({pokemonInstances.length} registered pokepets)
               </div>
               {onNavigateToRegister && (
                 <button
@@ -229,7 +231,7 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
                   className="ml-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition-colors cursor-pointer shadow-lg"
                 >
                   <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>Register Specimen</span>
+                  <span>Register Pokepet</span>
                 </button>
               )}
             </div>
@@ -247,7 +249,7 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
                 PC Box {pokemon.boxNumber} • Slot {pokemon.boxSlot} (Row {pokemon.boxRow}, Col {pokemon.boxCol})
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Specimens marked as "Stored in Pokémon HOME" are eligible for placement in this Living Dex slot.
+                Pokepets marked as "Stored in Pokémon HOME" are eligible for placement in this Living Dex slot.
               </p>
             </div>
 
@@ -272,14 +274,14 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
           <div className="bg-[#0B0F17] border border-slate-800/90 rounded-xl p-4 flex items-center justify-between gap-3">
             <div>
               <div className="text-[11px] text-slate-400 font-mono">
-                Assigned Specimen:
+                Assigned Pokepet:
               </div>
               <div className="text-xs font-bold text-slate-200 mt-0.5">
                 {pokemonInstances.find((s) => s.isInLivingBox && s.storedInHome)
                   ? `${pokemonInstances.find((s) => s.isInLivingBox && s.storedInHome)?.nickname || pokemon.name} (Lv.${pokemonInstances.find((s) => s.isInLivingBox && s.storedInHome)?.level})`
                   : isLiving
                   ? `${pokemon.name} (Boxed)`
-                  : 'No HOME specimen assigned to slot yet'}
+                  : 'No HOME pokepet assigned to slot yet'}
               </div>
             </div>
             <button
@@ -293,17 +295,17 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
         </div>
       </div>
 
-      {/* USER'S LOGGED SPECIMEN INVENTORY FOR THIS POKÉMON */}
+      {/* USER'S LOGGED POKEPET INVENTORY FOR THIS POKÉMON */}
       <section className="bg-[#0F1522] border border-amber-500/40 rounded-2xl p-6 flex flex-col gap-4 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-3">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold border border-amber-500/40">
-                SPECIMEN INVENTORY ({pokemonInstances.length} INSTANCES)
+                POKEPET INVENTORY ({pokemonInstances.length} REGISTERED)
               </span>
             </div>
             <h2 className="text-xl font-bold text-slate-100">
-              Your Caught Instances & 12-Digit POKEIDs
+              Your Registered Pet Pokémon & 12-Digit POKEIDs
             </h2>
             <p className="text-xs text-slate-400">
               Every registered instance of {pokemon.name} with its permanent POKEID, level, origin game, and storage status.
@@ -325,7 +327,7 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
         {pokemonInstances.length === 0 ? (
           <div className="p-8 rounded-2xl bg-[#0B0F17] border border-slate-800/80 text-center flex flex-col items-center gap-3">
             <p className="text-xs text-slate-400">
-              No individual specimens recorded yet for {pokemon.name}. Use the Register Pokémon page to record your first instance with its exact Level, POKEID, and origin.
+              No individual pokepets recorded yet for {pokemon.name}. Use the Register Pokémon page to record your first pet with its exact Level, POKEID, and origin.
             </p>
             {onNavigateToRegister && (
               <button
@@ -333,7 +335,7 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
                 onClick={() => onNavigateToRegister(pokemon.id)}
                 className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition-colors cursor-pointer shadow-lg"
               >
-                + Register First {pokemon.name} Specimen
+                + Register First {pokemon.name} Pokepet
               </button>
             )}
           </div>
@@ -379,7 +381,7 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
                           type="button"
                           onClick={() => onOpenTrainerCardForPokeId(inst)}
                           className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-amber-300 border border-slate-700 cursor-pointer"
-                          title="View Specimen Trainer Card"
+                          title="View Pokepet Trainer Card"
                         >
                           <CreditCard className="w-3.5 h-3.5 text-amber-400" />
                         </button>
@@ -389,7 +391,7 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
                           type="button"
                           onClick={() => onDeleteInstance(inst.pokeId)}
                           className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-700 cursor-pointer"
-                          title="Delete Specimen"
+                          title="Delete Pokepet"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -610,41 +612,92 @@ export const PokemonFullPageView: React.FC<PokemonFullPageViewProps> = ({
         )}
       </div>
 
-      {/* Mainline Encounter Games */}
+      {/* Owned Games Encounter & Exclusivity Information */}
       <section className="bg-[#0F1522] border border-slate-800/80 rounded-2xl p-6 flex flex-col gap-4 shadow-xl">
-        <h2 className="text-xl font-bold text-slate-100">
-          Mainline Encounter Games ({availableCatchGames.length} Available Titles)
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {availableCatchGames.map((gameMeta) => {
-            const avail = pokemon.availability[gameMeta.id];
-            const isOwned = ownedGames.includes(gameMeta.id);
-            return (
-              <div
-                key={gameMeta.id}
-                className={`p-3.5 rounded-xl border flex flex-col justify-between gap-2 ${
-                  isOwned
-                    ? 'bg-[#0B0F17] border-slate-800'
-                    : 'bg-slate-950/60 border-slate-800/60 opacity-60'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <GameLogoBadge gameId={gameMeta.id} size="sm" />
-                    <span className="font-bold text-sm text-slate-100">{gameMeta.title}</span>
-                  </div>
-                  <span className="text-xs font-mono-tabular text-amber-300">
-                    {avail.versionExclusive}
-                  </span>
-                </div>
-                <div className="text-xs text-slate-300">
-                  <MapPin className="w-3 h-3 text-slate-500 inline mr-1" />
-                  {avail.whereToFind}
-                </div>
-              </div>
-            );
-          })}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+          <div>
+            <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+              GAME AVAILABILITY & POKÉDEX COMPLETION
+            </span>
+            <h2 className="text-xl font-bold text-slate-100 mt-0.5">
+              Your Owned Games ({userOwnedEncounterGames.length} Marked)
+            </h2>
+          </div>
+          <p className="text-xs text-slate-400 max-w-md">
+            Showing only games you have marked as owned. Individual game versions are separated to clearly show version exclusives and completion guides.
+          </p>
         </div>
+
+        {userOwnedEncounterGames.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-[#0B0F17] border border-slate-800/80 text-center flex flex-col items-center gap-3">
+            <Gamepad2 className="w-8 h-8 text-slate-500" />
+            <div className="text-sm font-bold text-slate-200">No Owned Games Marked</div>
+            <p className="text-xs text-slate-400 max-w-md">
+              Unowned games are hidden from this Pokémon's page. To view catch locations, version-exclusive status, and Pokédex completion guides for your games, select your owned games in Settings.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {userOwnedEncounterGames.map((gameMeta) => {
+              const avail = pokemon.availability[gameMeta.id];
+              const isCatchable = avail.status === 'base' || avail.status === 'dlc';
+              const hasExclusivity = isExclusiveLabel(avail.versionExclusive);
+
+              return (
+                <div
+                  key={gameMeta.id}
+                  className={`p-4 rounded-xl border flex flex-col justify-between gap-3 shadow-md ${
+                    isCatchable
+                      ? 'bg-[#0B0F17] border-slate-800 hover:border-slate-700'
+                      : 'bg-slate-950/70 border-slate-800/70'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/70 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <GameLogoBadge gameId={gameMeta.id} size="sm" />
+                      <div>
+                        <span className="font-extrabold text-sm text-slate-100 block">
+                          {gameMeta.title}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {gameMeta.platform} • Gen {gameMeta.generation}
+                        </span>
+                      </div>
+                    </div>
+                    {hasExclusivity && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                        ★ {avail.versionExclusive}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Encounter or Location Details */}
+                  <div className="text-xs flex flex-col gap-1.5">
+                    <div className="flex items-start gap-1.5 text-slate-300">
+                      <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="leading-relaxed">
+                        <strong className="text-slate-200">Where to Find:</strong>{' '}
+                        <span>{avail.whereToFind}</span>
+                      </div>
+                    </div>
+
+                    {/* How to complete your Pokédex in this owned game */}
+                    {avail.pokedexCompletionGuide && (
+                      <div className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] leading-relaxed flex flex-col gap-0.5">
+                        <span className="font-bold text-amber-400 font-mono text-[10px] uppercase">
+                          How to Complete Your {gameMeta.shortTitle} Pokédex:
+                        </span>
+                        <span className="text-slate-300 font-medium">
+                          {avail.pokedexCompletionGuide}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );

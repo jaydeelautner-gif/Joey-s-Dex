@@ -158,7 +158,7 @@ export const LivingBoxesView: React.FC<LivingBoxesViewProps> = ({
           </span>
         </div>
         <div className="text-xs text-slate-400 font-mono-tabular">
-          Level, origin game, trade history & storage location shown per specimen. Input new Pokémon on the <strong className="text-amber-300">Register Pokémon</strong> page.
+          Level, origin game, trade history & storage location shown per pokepet. Register pet Pokémon on the <strong className="text-amber-300">Register Pokémon</strong> page.
         </div>
       </div>
 
@@ -288,12 +288,12 @@ export const LivingBoxesView: React.FC<LivingBoxesViewProps> = ({
                   />
                 </div>
 
-                {/* Bottom Specimen Information */}
+                {/* Bottom Pokepet Information */}
                 <div className="flex flex-col gap-1.5">
                   <div className="text-center">
-                    {(isBoxed || isCaught) && (
+                    {matchingSpecimen?.pokeId && (
                       <div className="text-[9px] font-mono font-bold text-amber-300/90 bg-slate-900/90 px-1 py-0.5 rounded border border-slate-800 mb-1 truncate">
-                        {matchingSpecimen?.pokeId || `ID${(p.id * 7919 + 1013904223).toString(36).toUpperCase().padStart(10, '0').slice(-10)}`}
+                        {matchingSpecimen.pokeId}
                       </div>
                     )}
                     {matchingSpecimen?.nickname && (

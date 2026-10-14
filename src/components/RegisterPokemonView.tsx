@@ -27,11 +27,11 @@ import {
 } from '../data/pokemonGenderData';
 import { canBeHomeGift, getHomeGiftInfo } from '../data/homeGiftsData';
 import {
-  generatePokeId,
   isTransferToHomePermanentlyBlocked,
   type PokemonInstance,
   type PokemonGender,
 } from '../data/pokemonInventoryData';
+import { generateUniqueSiteWidePokeId } from '../firebase';
 import { PokemonSprite } from './PokemonSprite';
 import { BoxSlotMiniMap } from './BoxSlotMiniMap';
 
@@ -39,6 +39,7 @@ interface RegisterPokemonViewProps {
   dex: PokemonEntry[];
   ownedGames: GameId[];
   inventory: PokemonInstance[];
+  initialPokemonId?: number;
   onSaveNewInstance: (instance: PokemonInstance) => void;
   onOpenPokemonPage: (pokemon: PokemonEntry) => void;
   onNavigateToInventory?: () => void;
@@ -48,6 +49,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
   dex,
   ownedGames,
   inventory,
+  initialPokemonId,
   onSaveNewInstance,
   onOpenPokemonPage,
   onNavigateToInventory,
@@ -55,7 +57,23 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
   // Search query (number or name)
   const [query, setQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedPokemon, setSelectedPokemon] = useState<PokemonEntry | null>(() => dex[0] || null);
+  const [selectedPokemon, setSelectedPokemon] = useState<PokemonEntry | null>(() => {
+    if (initialPokemonId) {
+      const initMon = dex.find((p) => p.id === initialPokemonId);
+      if (initMon) return initMon;
+    }
+    return dex[0] || null;
+  });
+
+  // Track initialPokemonId updates
+  useEffect(() => {
+    if (initialPokemonId) {
+      const initMon = dex.find((p) => p.id === initialPokemonId);
+      if (initMon) {
+        setSelectedPokemon(initMon);
+      }
+    }
+  }, [initialPokemonId, dex]);
 
   // Form Fields
   const [level, setLevel] = useState<number | ''>(50);
@@ -70,6 +88,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
   const [isHomeGift, setIsHomeGift] = useState(false);
   const [storedInHome, setStoredInHome] = useState(true);
   const [isInLivingBox, setIsInLivingBox] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Field validation and errors
   const [errors, setErrors] = useState<string[]>([]);
@@ -201,7 +220,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
     setErrors([]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPokemon) {
       setErrors(['Please select a valid Pokémon to register.']);
@@ -241,38 +260,46 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
     }
 
     setErrors([]);
+    setIsSubmitting(true);
 
-    // Generate unique 12-char POKEID (e.g. ID8F3K9L2M4P)
-    const existingPokeIds = new Set(inventory.map((inv) => inv.pokeId));
-    const pokeId = generatePokeId(existingPokeIds);
+    try {
+      // Generate guaranteed unique 12-char POKEID checked site-wide across all users
+      const existingPokeIds = new Set(inventory.map((inv) => inv.pokeId));
+      const pokeId = await generateUniqueSiteWidePokeId(existingPokeIds);
 
-    const chosenVariant = variations.find((v) => v.variantId === selectedVariantId);
-    const variantName = chosenVariant ? chosenVariant.formName : `${selectedPokemon.name} (Base)`;
+      const chosenVariant = variations.find((v) => v.variantId === selectedVariantId);
+      const variantName = chosenVariant ? chosenVariant.formName : `${selectedPokemon.name} (Base)`;
 
-    const effectiveStoredInHome = transferBlockInfo.isBlocked ? false : isHomeGift ? true : storedInHome;
+      const effectiveStoredInHome = transferBlockInfo.isBlocked ? false : isHomeGift ? true : storedInHome;
 
-    const newInstance: PokemonInstance = {
-      pokeId,
-      pokemonId: selectedPokemon.id,
-      nickname: nickname.trim().slice(0, 10),
-      level: Number(level),
-      gender: genderInfo.genderRatio === 'genderless' ? 'genderless' : gender,
-      variantId: selectedVariantId,
-      variantName,
-      isShiny,
-      gameId: isHomeGift ? undefined : (targetGame as GameId),
-      isHomeGift,
-      isTraded,
-      storedInHome: effectiveStoredInHome,
-      isInLivingBox: effectiveStoredInHome && isInLivingBox,
-      livingBoxNumber: selectedPokemon.boxNumber,
-      livingBoxSlot: selectedPokemon.boxSlot,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+      const newInstance: PokemonInstance = {
+        pokeId,
+        pokemonId: selectedPokemon.id,
+        nickname: nickname.trim().slice(0, 10),
+        level: Number(level),
+        gender: genderInfo.genderRatio === 'genderless' ? 'genderless' : gender,
+        variantId: selectedVariantId,
+        variantName,
+        isShiny,
+        gameId: isHomeGift ? undefined : (targetGame as GameId),
+        isHomeGift,
+        isTraded,
+        storedInHome: effectiveStoredInHome,
+        isInLivingBox: effectiveStoredInHome && isInLivingBox,
+        livingBoxNumber: selectedPokemon.boxNumber,
+        livingBoxSlot: selectedPokemon.boxSlot,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
 
-    onSaveNewInstance(newInstance);
-    setRegisteredSuccess(newInstance);
+      onSaveNewInstance(newInstance);
+      setRegisteredSuccess(newInstance);
+    } catch (err) {
+      console.error('Error generating POKEID:', err);
+      setErrors(['Unable to generate site-wide unique POKEID. Please verify connection and retry.']);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const activeVariantObj = useMemo(() => {
@@ -297,15 +324,15 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
         <div className="flex flex-col gap-2 relative z-10">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[11px] font-mono-tabular font-bold">
-              OFFICIAL REGISTRATION PORTAL
+              POKEPET REGISTRATION PORTAL
             </span>
-            <span className="text-xs text-slate-400">Database Entry with Unique POKEID</span>
+            <span className="text-xs text-slate-400">Database Entry with Unique Site-Wide POKEID</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-            Register Pokémon Specimen
+            Register Pet Pokémon
           </h1>
           <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
-            This is the official and exclusive gateway to input Pokémon to your database. Every entry generates an automatically assigned, unique 12-digit POKEID, validates origin game or HOME gift status, enforces level (1–100), and records storage state.
+            This is the exclusive gateway to register pet Pokémon to your database. Every entry generates a site-wide unique 12-digit POKEID checked against the central database to guarantee no duplicates, validates origin game or HOME gift status, enforces level (1–100), and records storage state.
           </p>
         </div>
       </div>
@@ -467,10 +494,10 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
             )}
           </div>
 
-          {/* Right Column: Specimen Input Attributes */}
+          {/* Right Column: Pokepet Input Attributes */}
           <div className="lg:col-span-7 flex flex-col gap-5 bg-[#0F1522] border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
             <h2 className="text-base font-bold text-slate-100 border-b border-slate-800/80 pb-3">
-              Specimen Attributes & Acquisition Details
+              Pokepet Attributes & Acquisition Details
             </h2>
 
             {/* Error notifications */}
@@ -534,7 +561,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
                       type="button"
                       onClick={() => setNickname('')}
                       className="px-2.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-sky-400 font-semibold cursor-pointer whitespace-nowrap"
-                      title="Revert back to the Pokémon's official name"
+                      title="Revert back to the Pokémon's species name"
                     >
                       Revert
                     </button>
@@ -617,7 +644,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
                     </span>
                     <span className="text-[11px] text-purple-300/80">
                       {getHomeGiftInfo(selectedPokemon?.id || 0)?.description ||
-                        'Official Pokémon HOME Mystery Gift / Event distribution'}
+                        'Pokémon HOME Mystery Gift / Event distribution'}
                     </span>
                   </div>
                 </label>
@@ -698,7 +725,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Shiny Specimen</span>
+                    <span>Shiny Pokepet</span>
                   </span>
                   <span className="text-[10px] text-slate-400">Registers shiny artwork in Pokédex</span>
                 </div>
@@ -718,7 +745,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
                     {transferBlockInfo.reason}
                   </p>
                   <p className="text-[10px] text-slate-400 mt-1">
-                    This specimen will be classified as (stored in {GAMES.find((g) => g.id === targetGame)?.platform || 'Console'}) and is ineligible for the Living Dex.
+                    This pokepet will be classified as (stored in {GAMES.find((g) => g.id === targetGame)?.platform || 'Console'}) and is ineligible for the Living Dex.
                   </p>
                 </div>
               ) : (
@@ -745,7 +772,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
                     <span className="text-[10px] text-slate-400">
                       {isHomeGift
                         ? 'HOME gifts are automatically stored in Pokémon HOME.'
-                        : 'Unlocks specimen to be added to the Living Dex. If untagged, marked as ineligible for living dex and classed as stored in console.'}
+                        : 'Unlocks pokepet to be added to the Living Dex. If untagged, marked as ineligible for living dex and classed as stored in console.'}
                     </span>
                   </div>
                 </label>
@@ -790,7 +817,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
                 <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-rose-300/90 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
                   <span>
-                    Marked as <strong>Ineligible for Living Dex</strong> because specimen is not stored in Pokémon HOME. (Option to add to living dex will not show until changed).
+                    Marked as <strong>Ineligible for Living Dex</strong> because pokepet is not stored in Pokémon HOME. (Option to add to living dex will not show until changed).
                   </span>
                 </div>
               )}
@@ -801,17 +828,28 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
               <button
                 type="button"
                 onClick={handleResetForm}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset Form</span>
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer transition-colors shadow-lg shadow-amber-500/25"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-slate-950 text-xs font-extrabold cursor-pointer transition-colors shadow-lg shadow-amber-500/25"
               >
-                <Check className="w-4 h-4 stroke-[3]" />
-                <span>Save Pokémon to Database</span>
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <span>Assigning Unique POKEID...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>Save Pet Pokémon to Database</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -837,12 +875,12 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
             </div>
 
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-mono font-bold text-amber-400">POKÉMON REGISTERED SUCCESSFULLY</span>
+              <span className="text-xs font-mono font-bold text-amber-400">PET POKÉMON REGISTERED SUCCESSFULLY</span>
               <h3 className="text-xl font-extrabold text-slate-100">
                 {registeredSuccess.nickname || selectedPokemon?.name}
               </h3>
               <p className="text-xs text-slate-400">
-                Specimen instance saved to inventory with unique POKEID certificate.
+                Pokepet saved to inventory and universal database with unique POKEID certificate.
               </p>
             </div>
 
@@ -865,7 +903,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
             {/* Generated POKEID Card */}
             <div className="p-3.5 rounded-xl bg-slate-900 border border-amber-500/50 flex flex-col gap-1">
               <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                Unique 12-Digit Specimen Identifier (POKEID)
+                Unique 12-Digit Pokepet Identifier (POKEID)
               </span>
               <span className="text-xl font-mono font-black text-amber-300 tracking-wider select-all">
                 {registeredSuccess.pokeId}
@@ -882,7 +920,7 @@ export const RegisterPokemonView: React.FC<RegisterPokemonViewProps> = ({
                 onClick={() => setRegisteredSuccess(null)}
                 className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold cursor-pointer transition-colors"
               >
-                Register Another
+                Register Another Pokepet
               </button>
               {selectedPokemon && (
                 <button

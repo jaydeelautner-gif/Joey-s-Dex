@@ -11,6 +11,10 @@ service cloud.firestore {
       return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    function isValidPokeId(id) {
+      return id is string && id.size() == 12 && id.matches('^ID[A-Z0-9]{10}$');
+    }
+
     function incoming() {
       return request.resource.data;
     }
@@ -20,7 +24,7 @@ service cloud.firestore {
     }
 
     function isSignedIn() {
-      return request.auth != null && request.auth.token.email_verified == true;
+      return request.auth != null;
     }
 
     function isOwner(userId) {
@@ -32,42 +36,7 @@ service cloud.firestore {
     }
 
     function isValidGameCatchesMap(m) {
-      return m is map &&
-        m.keys().hasAll([
-          'rb', 'yellow', 'gs', 'crystal',
-          'rse', 'frlg', 'frlg_switch', 'colo', 'xd',
-          'dppt', 'hgss', 'bw', 'b2w2',
-          'xy', 'oras', 'sm', 'usum', 'lgpe', 'pogo', 'swsh', 'bdsp', 'pla', 'sv'
-        ]) &&
-        m.keys().hasOnly([
-          'rb', 'yellow', 'gs', 'crystal',
-          'rse', 'frlg', 'frlg_switch', 'colo', 'xd',
-          'dppt', 'hgss', 'bw', 'b2w2',
-          'xy', 'oras', 'sm', 'usum', 'lgpe', 'pogo', 'swsh', 'bdsp', 'pla', 'sv'
-        ]) &&
-        isValidIntList(m.rb) &&
-        isValidIntList(m.yellow) &&
-        isValidIntList(m.gs) &&
-        isValidIntList(m.crystal) &&
-        isValidIntList(m.rse) &&
-        isValidIntList(m.frlg) &&
-        isValidIntList(m.frlg_switch) &&
-        isValidIntList(m.colo) &&
-        isValidIntList(m.xd) &&
-        isValidIntList(m.dppt) &&
-        isValidIntList(m.hgss) &&
-        isValidIntList(m.bw) &&
-        isValidIntList(m.b2w2) &&
-        isValidIntList(m.xy) &&
-        isValidIntList(m.oras) &&
-        isValidIntList(m.sm) &&
-        isValidIntList(m.usum) &&
-        isValidIntList(m.lgpe) &&
-        isValidIntList(m.pogo) &&
-        isValidIntList(m.swsh) &&
-        isValidIntList(m.bdsp) &&
-        isValidIntList(m.pla) &&
-        isValidIntList(m.sv);
+      return m is map && m.size() <= 60;
     }
 
     function isValidInventory(inv) {
@@ -154,8 +123,8 @@ service cloud.firestore {
       data.boxSelectedGames.size() <= 1050 &&
       (data.boxSelectedGames.size() == 0 || (data.boxSelectedGames[0] is string && data.boxSelectedGames[0].size() <= 32)) &&
       data.ownedGames is list &&
-      data.ownedGames.size() <= 35 &&
-      (data.ownedGames.size() == 0 || (data.ownedGames[0] is string && data.ownedGames[0].size() <= 20)) &&
+      data.ownedGames.size() <= 50 &&
+      (data.ownedGames.size() == 0 || (data.ownedGames[0] is string && data.ownedGames[0].size() <= 30)) &&
       data.ownedDlcs is list &&
       data.ownedDlcs.size() <= 20 &&
       (data.ownedDlcs.size() == 0 || (data.ownedDlcs[0] is string && data.ownedDlcs[0].size() <= 40)) &&
@@ -171,6 +140,57 @@ service cloud.firestore {
       data.updatedAt is timestamp;
     }
 
+    // Entity Blueprint Validation Helper: RegisteredPokepet
+    function isValidRegisteredPokepet(data) {
+      return data.keys().hasAll([
+        'pokeId',
+        'ownerId',
+        'trainerName',
+        'pokemonId',
+        'level',
+        'gender',
+        'variantId',
+        'variantName',
+        'isShiny',
+        'isHomeGift',
+        'isTraded',
+        'storedInHome',
+        'isInLivingBox',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.pokeId is string &&
+      data.pokeId.size() == 12 &&
+      data.pokeId.matches('^ID[A-Z0-9]{10}$') &&
+      data.ownerId is string &&
+      data.ownerId.size() >= 1 &&
+      data.ownerId.size() <= 128 &&
+      data.ownerId == request.auth.uid &&
+      data.trainerName is string &&
+      data.trainerName.size() >= 1 &&
+      data.trainerName.size() <= 60 &&
+      data.pokemonId is int &&
+      data.pokemonId >= 1 &&
+      data.pokemonId <= 1025 &&
+      data.level is int &&
+      data.level >= 1 &&
+      data.level <= 100 &&
+      data.gender is string &&
+      data.gender.size() <= 16 &&
+      data.variantId is string &&
+      data.variantId.size() <= 32 &&
+      data.variantName is string &&
+      data.variantName.size() <= 60 &&
+      data.isShiny is bool &&
+      data.isHomeGift is bool &&
+      data.isTraded is bool &&
+      data.storedInHome is bool &&
+      data.isInLivingBox is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Per-User Dex Profile Collection
     match /userDexProfiles/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || existing().isPublic == true);
       allow create: if isOwner(userId) &&
@@ -209,6 +229,28 @@ service cloud.firestore {
         )
       );
       allow delete: if isOwner(userId) && isValidId(userId);
+    }
+
+    // Universal Registry of Registered Pokepets
+    match /registeredPokepets/{pokeId} {
+      allow get: if isValidPokeId(pokeId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() &&
+        isValidPokeId(pokeId) &&
+        incoming().pokeId == pokeId &&
+        isValidRegisteredPokepet(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isSignedIn() &&
+        isOwner(existing().ownerId) &&
+        isValidPokeId(pokeId) &&
+        incoming().pokeId == existing().pokeId &&
+        incoming().pokemonId == existing().pokemonId &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidRegisteredPokepet(incoming());
+      allow delete: if isSignedIn() && isOwner(existing().ownerId) && isValidPokeId(pokeId);
     }
   }
 }

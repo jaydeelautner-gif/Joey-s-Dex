@@ -878,3 +878,71 @@ export const XD_SHADOW_SPECIES = new Set<number>([
   317, 319, 321, 323, 324, 326, 329, 332, 334, 335, 336, // Swalot, Sharpedo, Wailord, Camerupt, Torkoal, Grumpig, Vibrava, Cacturne, Altaria, Zangoose, Seviper
   337, 338, 340, 342, 344, 350, 351, 354, 356, 357, 358, 359, 362, 365, 370, // Lunatone, Solrock, Whiscash, Crawdaunt, Claydol, Milotic, Castform, Banette, Dusclops, Tropius, Chimecho, Absol, Glalie, Walrein, Luvdisc
 ]);
+
+// ==========================================
+// CANONICAL COMPANION VERSION EXCLUSIVES
+// ==========================================
+
+export const SWORD_EXCLUSIVES = new Set<number>([
+  83, 865, 273, 274, 275, 303, 338, 554, 555, 559, 560, 574, 575, 576, 627, 628, 633, 634, 635, 684, 685, 766, 776, 782, 783, 784, 841, 874, 888, 127, 692, 693, 138, 139, 371, 372, 373,
+]);
+
+export const SHIELD_EXCLUSIVES = new Set<number>([
+  77, 78, 222, 864, 270, 271, 272, 302, 337, 453, 454, 577, 578, 579, 629, 630, 246, 247, 248, 682, 683, 765, 780, 704, 705, 706, 842, 875, 889, 214, 690, 691, 140, 141, 443, 444, 445,
+]);
+
+export const SCARLET_EXCLUSIVES = new Set<number>([
+  246, 247, 248, 425, 426, 434, 435, 633, 634, 635, 690, 691, 765, 874, 845, 936, 984, 985, 986, 987, 988, 989, 990, 1007, 1009, 1020, 1021, 207, 472, 408, 409, 37, 38,
+]);
+
+export const VIOLET_EXCLUSIVES = new Set<number>([
+  200, 429, 316, 317, 371, 372, 373, 692, 693, 766, 885, 886, 887, 875, 877, 937, 991, 992, 993, 994, 995, 996, 997, 1008, 1010, 1022, 1023, 190, 424, 410, 411, 27, 28,
+]);
+
+export const BD_EXCLUSIVES = new Set<number>([
+  10, 11, 12, 23, 24, 58, 59, 86, 87, 123, 212, 239, 125, 466, 198, 430, 207, 472, 246, 247, 248, 273, 274, 275, 303, 335, 338, 352, 408, 409, 434, 435, 483, 250, 243, 244, 245,
+]);
+
+export const SP_EXCLUSIVES = new Set<number>([
+  13, 14, 15, 27, 28, 37, 38, 79, 80, 199, 240, 126, 467, 127, 200, 429, 216, 217, 234, 270, 271, 272, 302, 336, 337, 371, 372, 373, 410, 411, 431, 432, 484, 249, 144, 145, 146,
+]);
+
+export const LGP_EXCLUSIVES = new Set<number>([27, 28, 43, 44, 45, 56, 57, 58, 59, 88, 89, 123]);
+export const LGE_EXCLUSIVES = new Set<number>([23, 24, 37, 38, 52, 53, 69, 70, 71, 109, 110, 127]);
+
+export const RED_EXCLUSIVES = new Set<number>([23, 24, 43, 44, 45, 56, 57, 58, 59, 123, 125]);
+export const BLUE_EXCLUSIVES = new Set<number>([27, 28, 37, 38, 52, 53, 69, 70, 71, 126, 127]);
+
+export const GOLD_EXCLUSIVES = new Set<number>([56, 57, 58, 59, 167, 168, 207, 216, 217, 226, 231, 232]);
+export const SILVER_EXCLUSIVES = new Set<number>([37, 38, 52, 53, 165, 166, 225, 227, 228, 229]);
+
+export const RUBY_EXCLUSIVES = new Set<number>([273, 274, 275, 303, 335, 338, 381, 383]);
+export const SAPPHIRE_EXCLUSIVES = new Set<number>([270, 271, 272, 302, 336, 337, 380, 382]);
+
+export const FIRERED_EXCLUSIVES = new Set<number>([23, 24, 43, 44, 45, 54, 55, 58, 59, 90, 91, 123, 125, 194, 195, 198, 211, 225, 227]);
+export const LEAFGREEN_EXCLUSIVES = new Set<number>([27, 28, 37, 38, 69, 70, 71, 79, 80, 120, 121, 126, 127, 183, 184, 200, 223, 224, 226]);
+
+export const DIAMOND_EXCLUSIVES = new Set<number>([86, 87, 123, 198, 246, 247, 248, 261, 262, 304, 305, 306, 408, 409, 434, 435, 483]);
+export const PEARL_EXCLUSIVES = new Set<number>([79, 80, 127, 200, 228, 229, 327, 371, 372, 373, 410, 411, 431, 432, 484]);
+
+export const HEARTGOLD_EXCLUSIVES = new Set<number>([56, 57, 58, 59, 167, 168, 207, 226, 231, 232, 302, 343, 344, 382]);
+export const SOULSILVER_EXCLUSIVES = new Set<number>([37, 38, 52, 53, 165, 166, 216, 217, 225, 227, 303, 316, 317, 383]);
+
+export const BLACK_EXCLUSIVES = new Set<number>([13, 14, 15, 198, 228, 229, 285, 286, 574, 575, 576, 629, 630, 641, 643]);
+export const WHITE_EXCLUSIVES = new Set<number>([10, 11, 12, 200, 261, 262, 548, 549, 577, 578, 579, 627, 628, 642, 644]);
+
+export const BLACK2_EXCLUSIVES = new Set<number>([13, 14, 15, 240, 126, 467, 325, 326, 427, 428, 574, 575, 576, 629, 630, 643]);
+export const WHITE2_EXCLUSIVES = new Set<number>([10, 11, 12, 239, 125, 466, 322, 323, 300, 301, 577, 578, 579, 627, 628, 644]);
+
+export const X_EXCLUSIVES = new Set<number>([120, 121, 127, 228, 229, 261, 262, 304, 305, 306, 539, 684, 685, 692, 693, 716]);
+export const Y_EXCLUSIVES = new Set<number>([90, 91, 214, 246, 247, 248, 309, 310, 509, 510, 538, 682, 683, 690, 691, 717]);
+
+export const OMEGARUBY_EXCLUSIVES = new Set<number>([273, 274, 275, 303, 335, 338, 381, 383, 250, 483, 641, 643]);
+export const ALPHASAPPHIRE_EXCLUSIVES = new Set<number>([270, 271, 272, 302, 336, 337, 380, 382, 249, 484, 642, 644]);
+
+export const SUN_EXCLUSIVES = new Set<number>([37, 38, 546, 547, 627, 628, 766, 776, 791, 794, 798]);
+export const MOON_EXCLUSIVES = new Set<number>([27, 28, 548, 549, 629, 630, 765, 780, 792, 795, 797]);
+
+export const ULTRASUN_EXCLUSIVES = new Set<number>([37, 38, 228, 229, 408, 409, 546, 547, 627, 628, 692, 693, 766, 776, 791, 794, 798, 806]);
+export const ULTRAMOON_EXCLUSIVES = new Set<number>([27, 28, 309, 310, 410, 411, 548, 549, 629, 630, 690, 691, 765, 780, 792, 795, 797, 805]);
+

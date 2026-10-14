@@ -14,6 +14,7 @@ import {
   Share2,
   ChevronDown,
   ChevronUp,
+  Compass,
 } from 'lucide-react';
 import {
   GAMES,

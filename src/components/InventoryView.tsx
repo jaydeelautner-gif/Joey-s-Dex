@@ -15,6 +15,7 @@ import {
   EyeOff,
   RotateCcw,
   Gamepad2,
+  Lock,
 } from 'lucide-react';
 import type { PokemonEntry, GameId } from '../data/pokemonData';
 import { GAMES } from '../data/pokemonData';
@@ -22,6 +23,7 @@ import {
   formatOriginSourceLabel,
   formatStorageLocationLabel,
   type PokemonInstance,
+  type PokemonGender,
 } from '../data/pokemonInventoryData';
 import { getVariationsForPokemon } from '../data/regionalVariantsData';
 import { PokemonSprite } from './PokemonSprite';
@@ -50,14 +52,19 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const [filterGame, setFilterGame] = useState<string>('all');
   const [filterHomeStatus, setFilterHomeStatus] = useState<string>('all');
 
-  // Editing state for an instance
+  // Editing state for a pokepet
   const [editingPokeId, setEditingPokeId] = useState<string | null>(null);
   const [editLevel, setEditLevel] = useState<number>(50);
   const [editNickname, setEditNickname] = useState<string>('');
+  const [editGender, setEditGender] = useState<PokemonGender>('male');
   const [editGameId, setEditGameId] = useState<GameId | undefined>(undefined);
   const [editVariantId, setEditVariantId] = useState<string>('');
+  const [editIsShiny, setEditIsShiny] = useState<boolean>(false);
+  const [editIsTraded, setEditIsTraded] = useState<boolean>(false);
+  const [editIsHomeGift, setEditIsHomeGift] = useState<boolean>(false);
   const [editStoredInHome, setEditStoredInHome] = useState<boolean>(true);
   const [editIsInLivingBox, setEditIsInLivingBox] = useState<boolean>(true);
+  const [editNotes, setEditNotes] = useState<string>('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Set of revealed POKEIDs (initially hidden by default as requested)
@@ -107,10 +114,15 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     setEditingPokeId(item.pokeId);
     setEditLevel(item.level);
     setEditNickname(item.nickname || '');
+    setEditGender(item.gender || 'male');
     setEditGameId(item.gameId);
     setEditVariantId(item.variantId);
+    setEditIsShiny(Boolean(item.isShiny));
+    setEditIsTraded(Boolean(item.isTraded));
+    setEditIsHomeGift(Boolean(item.isHomeGift));
     setEditStoredInHome(item.storedInHome);
     setEditIsInLivingBox(item.isInLivingBox);
+    setEditNotes(item.notes || '');
   };
 
   const handleSaveEdit = (original: PokemonInstance) => {
@@ -119,16 +131,22 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     const chosenVariant = variations.find((v) => v.variantId === editVariantId);
     const variantName = chosenVariant ? chosenVariant.formName : original.variantName;
 
-    // Notice: POKEID CANNOT be changed!
+    // All attributes of a pokepet can be edited APART from its unique POKEID and Species!
     const updated: PokemonInstance = {
       ...original,
+      // pokeId and pokemonId (Species) remain strictly preserved and unchangeable
       level: Math.max(1, Math.min(100, editLevel)),
       nickname: editNickname.trim().slice(0, 10),
-      gameId: original.isHomeGift ? undefined : editGameId,
+      gender: editGender,
+      isShiny: editIsShiny,
+      isTraded: editIsTraded,
+      isHomeGift: editIsHomeGift,
+      gameId: editIsHomeGift ? undefined : editGameId,
       variantId: editVariantId || original.variantId,
       variantName,
       storedInHome: editStoredInHome,
       isInLivingBox: editStoredInHome && editIsInLivingBox,
+      notes: editNotes.trim().slice(0, 120),
       updatedAt: Date.now(),
     };
     onUpdateInstance(updated);
@@ -142,15 +160,15 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/40 text-sky-300 text-[11px] font-mono-tabular font-bold">
-              SPECIMEN INVENTORY
+              POKEPET INVENTORY
             </span>
-            <span className="text-xs text-slate-400">Total Caught Instances: {inventory.length}</span>
+            <span className="text-xs text-slate-400">Total Registered Pokepets: {inventory.length}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-            Pokémon Collection & POKEID Inventory
+            Pokepet Collection & POKEID Inventory
           </h1>
           <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
-            Every caught specimen has an unchangeable 12-digit POKEID (initially hidden for privacy). You can edit level, nickname, origin game, variant, and HOME storage status, or export individual Trainer Cards.
+            Every registered pokepet has a permanent, site-wide unique 12-digit POKEID. All attributes can be edited apart from its unique POKEID and Species (Pokédex number).
           </p>
         </div>
 
@@ -159,7 +177,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           onClick={onNavigateToRegister}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition-colors cursor-pointer shrink-0 shadow-lg shadow-amber-500/20"
         >
-          <span>+ Register Pokémon</span>
+          <span>+ Register Pet Pokémon</span>
         </button>
       </div>
 
@@ -281,7 +299,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       type="button"
                       onClick={() => onOpenTrainerCardForPokeId(item)}
                       className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-amber-300 transition-colors cursor-pointer"
-                      title="View Specimen Trainer Card"
+                      title="View Pokepet Trainer Card"
                     >
                       <CreditCard className="w-3.5 h-3.5 text-amber-400" />
                     </button>
@@ -290,7 +308,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                         type="button"
                         onClick={() => handleStartEdit(item)}
                         className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-sky-300 transition-colors cursor-pointer"
-                        title="Edit Specimen (Level, Variant, Game, Storage)"
+                        title="Edit Pokepet Attributes (Level, Nickname, Gender, Variant, Origin, Storage, Notes)"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -299,7 +317,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       type="button"
                       onClick={() => setConfirmDeleteId(item.pokeId)}
                       className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950 border border-slate-700 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                      title="Delete Specimen"
+                      title="Delete Pokepet"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -309,6 +327,20 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 {/* Edit Form OR Standard Display */}
                 {isEditing ? (
                   <div className="flex flex-col gap-3 py-1">
+                    {/* Locked Permanent Attributes: POKEID & Species */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-amber-500/30 text-xs">
+                      <div className="flex items-center gap-1.5 text-slate-400">
+                        <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>POKEID: <strong className="text-amber-300 font-mono">{item.pokeId}</strong></span>
+                        <span className="text-[10px] text-slate-500">(Locked)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-400">
+                        <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Species: <strong className="text-slate-200">#{item.pokemonId} {mon?.name}</strong></span>
+                        <span className="text-[10px] text-slate-500">(Locked)</span>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-[10px] font-bold text-slate-400">Level (1-100)</label>
@@ -347,6 +379,34 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       </div>
                     </div>
 
+                    {/* Gender & Shiny row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400">Gender</label>
+                        <select
+                          value={editGender}
+                          onChange={(e) => setEditGender(e.target.value as PokemonGender)}
+                          className="w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
+                        >
+                          <option value="male">Male (♂)</option>
+                          <option value="female">Female (♀)</option>
+                          <option value="genderless">Genderless (⚲)</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center pt-4">
+                        <label className="flex items-center gap-2 text-xs text-amber-300 font-semibold cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editIsShiny}
+                            onChange={(e) => setEditIsShiny(e.target.checked)}
+                            className="rounded text-amber-500"
+                          />
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Shiny Pokémon</span>
+                        </label>
+                      </div>
+                    </div>
+
                     {/* Variant dropdown */}
                     <div>
                       <label className="text-[10px] font-bold text-slate-400">Variant / Form</label>
@@ -363,23 +423,61 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       </select>
                     </div>
 
-                    {/* Origin Game (if not home gift) */}
-                    {!item.isHomeGift && (
-                      <div>
+                    {/* Origin Game (or HOME Gift) */}
+                    <div>
+                      <div className="flex items-center justify-between">
                         <label className="text-[10px] font-bold text-slate-400">Origin Game</label>
+                        <label className="flex items-center gap-1.5 text-[10px] text-purple-300 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editIsHomeGift}
+                            onChange={(e) => setEditIsHomeGift(e.target.checked)}
+                            className="rounded text-purple-500"
+                          />
+                          <span>Gifted from Pokémon HOME</span>
+                        </label>
+                      </div>
+                      {!editIsHomeGift && (
                         <select
                           value={editGameId || 'sv'}
                           onChange={(e) => setEditGameId(e.target.value as GameId)}
-                          className="w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
+                          className="w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200 mt-1"
                         >
                           {GAMES.map((g) => (
                             <option key={g.id} value={g.id}>
-                              {g.shortTitle}
+                              {g.title} ({g.platform})
                             </option>
                           ))}
                         </select>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    {/* Traded toggle */}
+                    <div className="pt-1">
+                      <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editIsTraded}
+                          onChange={(e) => setEditIsTraded(e.target.checked)}
+                          className="rounded text-sky-500"
+                        />
+                        <ArrowLeftRight className="w-3.5 h-3.5 text-sky-400" />
+                        <span>Received via Trade (Original Trainer not self)</span>
+                      </label>
+                    </div>
+
+                    {/* Notes field */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400">Notes / Remarks (max 120 chars)</label>
+                      <input
+                        type="text"
+                        maxLength={120}
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        placeholder="e.g. Bred for Competitive, Caught in Safari Ball..."
+                        className="w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200 mt-0.5"
+                      />
+                    </div>
 
                     {/* Storage Toggles */}
                     <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-800">
@@ -480,10 +578,10 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 {confirmDeleteId === item.pokeId && (
                   <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-sm p-4 flex flex-col justify-center items-center gap-3 z-20 text-center animate-fade-in">
                     <p className="text-xs font-bold text-rose-300">
-                      Delete specimen {item.pokeId}?
+                      Delete pokepet {item.pokeId}?
                     </p>
                     <p className="text-[11px] text-slate-400">
-                      If this is the last instance in your inventory, {mon?.name} will no longer be marked as caught.
+                      If this is the last registered pokepet of this species, {mon?.name} will be marked as uncaught.
                     </p>
                     <div className="flex items-center gap-2">
                       <button

@@ -53,7 +53,6 @@ interface DexSuggestionsSectionProps {
   onOpenFullPage: (pokemon: PokemonEntry) => void;
   onNavigateToRegister: (pokemonId?: number) => void;
   onNavigateToSettings: () => void;
-  onQuickCatch?: (pokemonId: number, gameId: GameId) => void;
   isGuest: boolean;
   onRequestAuth: (prompt: string) => void;
 }
@@ -71,7 +70,6 @@ export const DexSuggestionsSection: React.FC<DexSuggestionsSectionProps> = ({
   onOpenFullPage,
   onNavigateToRegister,
   onNavigateToSettings,
-  onQuickCatch,
   isGuest,
   onRequestAuth,
 }) => {
@@ -130,7 +128,7 @@ export const DexSuggestionsSection: React.FC<DexSuggestionsSectionProps> = ({
         list.push({
           pokemon: p,
           suggestionType: 'living_upgrade_pogo',
-          title: `Living Dex Upgrade: Replace Pokémon GO Specimen`,
+          title: `Living Dex Upgrade: Replace Pokémon GO Pokepet`,
           badgeLabel: `GO Replacement Opportunity`,
           badgeColor: 'amber',
           primaryGameId: primaryGId,
@@ -158,7 +156,7 @@ export const DexSuggestionsSection: React.FC<DexSuggestionsSectionProps> = ({
         list.push({
           pokemon: p,
           suggestionType: 'uncaught_owned',
-          title: `Uncaught Specimen (${primaryMeta.shortTitle})`,
+          title: `Uncaught Pokepet (${primaryMeta.shortTitle})`,
           badgeLabel: `Uncaught in Owned Games`,
           badgeColor: 'emerald',
           primaryGameId: primaryGId,
@@ -263,16 +261,6 @@ export const DexSuggestionsSection: React.FC<DexSuggestionsSectionProps> = ({
       return;
     }
     onNavigateToRegister(pokemonId);
-  };
-
-  const handleQuickCatchClick = (pokemonId: number, gameId: GameId) => {
-    if (isGuest) {
-      onRequestAuth('Sign up or log in to log Pokémon catches.');
-      return;
-    }
-    if (onQuickCatch) {
-      onQuickCatch(pokemonId, gameId);
-    }
   };
 
   return (
@@ -380,7 +368,7 @@ export const DexSuggestionsSection: React.FC<DexSuggestionsSectionProps> = ({
           </h3>
           <p className="text-xs text-slate-400 max-w-md">
             {activeFilter === 'upgrades'
-              ? 'None of your Living Dex slots are occupied by Pokémon GO specimens that can be replaced by your owned games.'
+              ? 'None of your Living Dex slots are occupied by Pokémon GO pokepets that can be replaced by your owned games.'
               : 'You have caught every Pokémon currently available across all your owned games and DLC packs. Add more games in Settings to explore new encounters!'}
           </p>
           <button
@@ -450,7 +438,7 @@ export const DexSuggestionsSection: React.FC<DexSuggestionsSectionProps> = ({
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/50 text-sky-300 text-[10px] font-mono font-bold">
-                        Missing Box Specimen
+                        Missing Box Pokepet
                       </span>
                     )}
                   </div>
@@ -489,7 +477,7 @@ export const DexSuggestionsSection: React.FC<DexSuggestionsSectionProps> = ({
 
                   {isUpgrade && (
                     <div className="text-[10px] text-amber-400/90 font-mono mt-0.5 pt-1 border-t border-slate-800/60">
-                      💡 Living Box {item.boxNumber} currently has a Pokémon GO specimen. Replace it with an authentic {item.primaryGameTitle} capture to upgrade Living Dex legitimacy!
+                      💡 Living Box {item.boxNumber} currently has a Pokémon GO pokepet. Replace it with an authentic {item.primaryGameTitle} capture to upgrade Living Dex legitimacy!
                     </div>
                   )}
 
@@ -512,16 +500,6 @@ export const DexSuggestionsSection: React.FC<DexSuggestionsSectionProps> = ({
                   </button>
 
                   <div className="flex items-center gap-2">
-                    {isUncaught && onQuickCatch && (
-                      <button
-                        type="button"
-                        onClick={() => handleQuickCatchClick(p.id, item.primaryGameId)}
-                        className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-400 font-semibold text-xs transition-colors cursor-pointer"
-                        title="Mark caught immediately in this game"
-                      >
-                        Quick Catch
-                      </button>
-                    )}
                     <button
                       type="button"
                       onClick={() => handleRegisterClick(p.id)}

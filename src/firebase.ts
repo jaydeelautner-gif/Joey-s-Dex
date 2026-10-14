@@ -7,6 +7,7 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInAnonymously,
   updateProfile,
   type User,
 } from 'firebase/auth';
@@ -17,6 +18,7 @@ import {
   getDocFromServer,
   setDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
   serverTimestamp,
   type Unsubscribe,
@@ -508,31 +510,224 @@ export async function saveUserDexProfile(
   }
 }
 
+export async function ensureSignedInUser(): Promise<User> {
+  if (auth.currentUser) return auth.currentUser;
+  const anonCredential = await signInAnonymously(auth);
+  return anonCredential.user;
+}
+
 /**
- * Searches for any specimen matching a 12-digit POKEID.
- * First checks local user inventory, and returns trainer metadata if found.
+ * Checks if a 12-digit POKEID is already registered across the entire database.
  */
-export async function searchSpecimenByPokeId(
+export async function checkIsPokeIdTakenInDatabase(pokeId: string): Promise<boolean> {
+  const cleanId = pokeId.trim().toUpperCase();
+  if (!cleanId.startsWith('ID') || cleanId.length !== 12) return false;
+  try {
+    const snap = await getDoc(doc(db, 'registeredPokepets', cleanId));
+    return snap.exists();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Generates an automatically unique, non-sequential 12-digit POKEID site-wide.
+ * Checks Firestore registeredPokepets to ensure no collisions across all users.
+ */
+export async function generateUniqueSiteWidePokeId(existingLocalIds?: Set<string>): Promise<string> {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let attempts = 0;
+  while (attempts < 100) {
+    attempts++;
+    let randomPart = '';
+    for (let i = 0; i < 10; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const candidate = `ID${randomPart}`;
+    if (existingLocalIds && existingLocalIds.has(candidate)) {
+      continue;
+    }
+    const isTaken = await checkIsPokeIdTakenInDatabase(candidate);
+    if (!isTaken) {
+      return candidate;
+    }
+  }
+  // Fallback timestamp mix
+  return `ID${Date.now().toString(36).toUpperCase().padStart(10, 'X').slice(-10)}`;
+}
+
+/**
+ * Saves a registered Pokepet into the central universal registeredPokepets collection.
+ */
+export async function savePokepetToUniversalDatabase(
+  item: SerializedPokemonInstance,
+  ownerId: string,
+  trainerName: string
+): Promise<void> {
+  const cleanPokeId = item.pokeId.trim().toUpperCase();
+  const path = `registeredPokepets/${cleanPokeId}`;
+  const docRef = doc(db, 'registeredPokepets', cleanPokeId);
+
+  const payload = {
+    pokeId: cleanPokeId,
+    ownerId,
+    trainerName: sanitizeTrainerName(trainerName),
+    pokemonId: item.pokemonId,
+    level: item.level,
+    gender: item.gender,
+    variantId: item.variantId,
+    variantName: item.variantName,
+    isShiny: item.isShiny,
+    isHomeGift: item.isHomeGift,
+    isTraded: item.isTraded,
+    storedInHome: item.storedInHome,
+    isInLivingBox: item.isInLivingBox,
+    gameId: item.gameId || null,
+    nickname: item.nickname || '',
+    notes: item.notes || '',
+    livingBoxNumber: item.livingBoxNumber || null,
+    livingBoxSlot: item.livingBoxSlot || null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    await setDoc(docRef, payload);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+/**
+ * Updates a registered Pokepet in the universal database.
+ * Notice: pokeId and pokemonId (species) CANNOT be edited.
+ */
+export async function updatePokepetInUniversalDatabase(
+  item: SerializedPokemonInstance,
+  ownerId: string,
+  trainerName: string
+): Promise<void> {
+  const cleanPokeId = item.pokeId.trim().toUpperCase();
+  const path = `registeredPokepets/${cleanPokeId}`;
+  const docRef = doc(db, 'registeredPokepets', cleanPokeId);
+
+  try {
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      // If it doesn't exist remotely yet, create it
+      await savePokepetToUniversalDatabase(item, ownerId, trainerName);
+      return;
+    }
+
+    await updateDoc(docRef, {
+      trainerName: sanitizeTrainerName(trainerName),
+      level: item.level,
+      gender: item.gender,
+      variantId: item.variantId,
+      variantName: item.variantName,
+      isShiny: item.isShiny,
+      isHomeGift: item.isHomeGift,
+      isTraded: item.isTraded,
+      storedInHome: item.storedInHome,
+      isInLivingBox: item.isInLivingBox,
+      gameId: item.gameId || null,
+      nickname: item.nickname || '',
+      notes: item.notes || '',
+      livingBoxNumber: item.livingBoxNumber || null,
+      livingBoxSlot: item.livingBoxSlot || null,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+/**
+ * Deletes a registered Pokepet from the universal database.
+ */
+export async function deletePokepetFromUniversalDatabase(pokeId: string): Promise<void> {
+  const cleanPokeId = pokeId.trim().toUpperCase();
+  const path = `registeredPokepets/${cleanPokeId}`;
+  const docRef = doc(db, 'registeredPokepets', cleanPokeId);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    // Non-fatal if document was never saved remotely
+    console.warn(`Could not delete remote pokepet ${cleanPokeId}:`, error);
+  }
+}
+
+export interface PokepetSearchResult {
+  success: boolean;
+  pokepet?: SerializedPokemonInstance;
+  trainerName?: string;
+  error?: string;
+}
+
+/**
+ * Searches for any Pokepet matching a 12-digit POKEID.
+ * Checks local inventory, universal registeredPokepets database, and cached profiles.
+ * If not found / not created, returns an explicit error.
+ */
+export async function searchPokepetByPokeId(
   pokeId: string,
   localInventory: SerializedPokemonInstance[],
   currentTrainerName: string
-): Promise<{
-  specimen: SerializedPokemonInstance;
-  trainerName: string;
-} | null> {
+): Promise<PokepetSearchResult> {
   const cleanId = pokeId.trim().toUpperCase();
-  if (!cleanId.startsWith('ID') || cleanId.length !== 12) return null;
+  if (!cleanId.startsWith('ID') || cleanId.length !== 12) {
+    return {
+      success: false,
+      error: 'Invalid POKEID format. POKEIDs must be exactly 12 characters and start with "ID" (e.g. ID8F3K9L2M4P).',
+    };
+  }
 
-  // Check local inventory first
+  // 1. Check local inventory first
   const localMatch = localInventory.find((inv) => inv.pokeId.toUpperCase() === cleanId);
   if (localMatch) {
     return {
-      specimen: localMatch,
+      success: true,
+      pokepet: localMatch,
       trainerName: currentTrainerName,
     };
   }
 
-  // Also check public profiles cache stored in localStorage
+  // 2. Query universal Firestore registeredPokepets database
+  try {
+    const snap = await getDoc(doc(db, 'registeredPokepets', cleanId));
+    if (snap.exists()) {
+      const data = snap.data();
+      const pokepet: SerializedPokemonInstance = {
+        pokeId: String(data.pokeId || cleanId),
+        pokemonId: Number(data.pokemonId),
+        nickname: data.nickname ? String(data.nickname) : undefined,
+        level: Number(data.level || 50),
+        gender: String(data.gender || 'genderless'),
+        variantId: String(data.variantId || `${data.pokemonId}:base`),
+        variantName: String(data.variantName || 'Standard'),
+        isShiny: Boolean(data.isShiny),
+        gameId: data.gameId ? String(data.gameId) : undefined,
+        isHomeGift: Boolean(data.isHomeGift),
+        isTraded: Boolean(data.isTraded),
+        storedInHome: Boolean(data.storedInHome),
+        isInLivingBox: Boolean(data.isInLivingBox),
+        livingBoxNumber: data.livingBoxNumber ? Number(data.livingBoxNumber) : undefined,
+        livingBoxSlot: data.livingBoxSlot ? Number(data.livingBoxSlot) : undefined,
+        notes: data.notes ? String(data.notes) : undefined,
+        createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now(),
+        updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : Date.now(),
+      };
+      return {
+        success: true,
+        pokepet,
+        trainerName: String(data.trainerName || 'Registered Trainer'),
+      };
+    }
+  } catch (err) {
+    console.warn('Error reading from registeredPokepets:', err);
+  }
+
+  // 3. Check public profiles cache stored in localStorage
   try {
     const rawPublic = localStorage.getItem('homedex_cached_public_profiles');
     if (rawPublic) {
@@ -540,10 +735,13 @@ export async function searchSpecimenByPokeId(
       if (Array.isArray(parsed)) {
         for (const prof of parsed) {
           if (prof && Array.isArray(prof.inventory)) {
-            const hit = prof.inventory.find((inv: SerializedPokemonInstance) => inv.pokeId.toUpperCase() === cleanId);
+            const hit = prof.inventory.find(
+              (inv: SerializedPokemonInstance) => inv.pokeId.toUpperCase() === cleanId
+            );
             if (hit) {
               return {
-                specimen: hit,
+                success: true,
+                pokepet: hit,
                 trainerName: prof.trainerName || 'Shared Trainer',
               };
             }
@@ -555,6 +753,26 @@ export async function searchSpecimenByPokeId(
     // ignore
   }
 
+  // 4. If not found in any database, return error
+  return {
+    success: false,
+    error: `POKEID "${cleanId}" does not exist in the database. No pet Pokémon has been registered with this POKEID.`,
+  };
+}
+
+// Backwards-compatible alias for any callers
+export async function searchSpecimenByPokeId(
+  pokeId: string,
+  localInventory: SerializedPokemonInstance[],
+  currentTrainerName: string
+): Promise<{ specimen: SerializedPokemonInstance; trainerName: string } | null> {
+  const res = await searchPokepetByPokeId(pokeId, localInventory, currentTrainerName);
+  if (res.success && res.pokepet) {
+    return {
+      specimen: res.pokepet,
+      trainerName: res.trainerName || currentTrainerName,
+    };
+  }
   return null;
 }
 

@@ -17,7 +17,6 @@ interface PokeBankClosureAlertSectionProps {
   gameCatches: GameCatchesMap;
   onSelectPokemon: (pokemon: PokemonEntry) => void;
   onOpenFullPage: (pokemon: PokemonEntry) => void;
-  onToggleCaught: (id: number) => void;
 }
 
 const NON_BANK_MODERN_GAMES: GameId[] = ['lgpe', 'pogo', 'swsh', 'bdsp', 'pla', 'sv'];

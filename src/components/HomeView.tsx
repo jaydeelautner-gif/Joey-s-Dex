@@ -16,7 +16,6 @@ import { GAMES, ALL_GAME_IDS } from '../data/pokemonData';
 import { PokeBankClosureAlertSection } from './PokeBankClosureAlertSection';
 import { GameLogoBadge } from './GameLogoBadge';
 import { type PokemonInstance } from '../data/pokemonInventoryData';
-import { BatchInputCard } from './BatchInputCard';
 import { DexSuggestionsSection } from './DexSuggestionsSection';
 
 interface HomeViewProps {
@@ -34,15 +33,12 @@ interface HomeViewProps {
   onRequestAuth: (prompt: string) => void;
   onSelectPokemon: (pokemon: PokemonEntry) => void;
   onOpenFullPage: (pokemon: PokemonEntry) => void;
-  onToggleCaught: (id: number) => void;
-  onQuickCatch?: (pokemonId: number, gameId: GameId) => void;
-  onBatchMarkCaught: (pokemonIds: number[], targetGame: GameId) => void;
   onNavigateToRegister: (pokemonId?: number) => void;
   onNavigateToTracker: () => void;
   onNavigateToLivingDex: () => void;
   onNavigateToInventory: () => void;
   onNavigateToSettings: () => void;
-  onLookupPokeId?: (pokeId: string) => void;
+  onLookupPokeId?: (pokeId: string) => Promise<string | null> | void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -60,9 +56,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onRequestAuth,
   onSelectPokemon,
   onOpenFullPage,
-  onToggleCaught,
-  onQuickCatch,
-  onBatchMarkCaught,
   onNavigateToRegister,
   onNavigateToTracker,
   onNavigateToLivingDex,
@@ -82,7 +75,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     0
   );
 
-  const handleLookupSubmit = (e: React.FormEvent) => {
+  const handleLookupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = pokeIdInput.trim().toUpperCase();
     if (!clean.startsWith('ID') || clean.length !== 12) {
@@ -91,7 +84,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
     setLookupError(null);
     if (onLookupPokeId) {
-      onLookupPokeId(clean);
+      const errorMsg = await onLookupPokeId(clean);
+      if (errorMsg) {
+        setLookupError(errorMsg);
+      }
     }
   };
 
@@ -111,7 +107,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               Welcome to HomeDex
             </h1>
             <p className="text-sm text-slate-300 leading-relaxed">
-              Register specimen catches with unique 12-digit POKEIDs, track HOME storage eligibility, and monitor 3DS Poké Bank closure risks. The only way to add Pokémon to your database is through the official <strong className="text-amber-300 font-semibold">Register Pokémon</strong> portal.
+              Register pet Pokémon with unique 12-digit POKEIDs, track HOME storage eligibility, and monitor 3DS Poké Bank closure risks. The only way to mark Pokémon as caught is by registering a pet Pokémon through the <strong className="text-amber-300 font-semibold">Register Pokémon</strong> page.
             </p>
           </div>
 
@@ -123,7 +119,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition-colors cursor-pointer shadow-lg shadow-amber-500/20"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span>Register Pokémon</span>
+              <span>Register Pet Pokémon</span>
             </button>
             <button
               type="button"
@@ -131,7 +127,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-xs transition-colors cursor-pointer"
             >
               <CreditCard className="w-4 h-4 text-sky-400" />
-              <span>Inventory ({inventory.length})</span>
+              <span>Pokepets ({inventory.length})</span>
             </button>
             <button
               type="button"
@@ -150,13 +146,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
-              UNIVERSAL SPECIMEN FINDER
+              UNIVERSAL POKEPET FINDER
             </span>
             <h2 className="text-lg font-bold text-slate-100 mt-0.5">
-              Find Any Pokémon by POKEID
+              Find Any Pet Pokémon by POKEID
             </h2>
             <p className="text-xs text-slate-400">
-              Enter any trainer's 12-digit POKEID to pull up its official passport, level, origin game, and certificate.
+              Enter any trainer's 12-digit POKEID to look up its trainer card, level, origin game, and storage status from the database.
             </p>
           </div>
         </div>
@@ -191,11 +187,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         )}
 
-        {/* Quick Click Sample POKEIDs */}
+        {/* Quick Click Registered POKEIDs */}
         <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-          <span className="text-slate-400 font-mono text-[11px]">Quick Lookup:</span>
+          <span className="text-slate-400 font-mono text-[11px]">Your Registered POKEIDs:</span>
           {inventory.length > 0 ? (
-            inventory.slice(0, 3).map((item) => (
+            inventory.slice(0, 4).map((item) => (
               <button
                 key={item.pokeId}
                 type="button"
@@ -204,53 +200,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   if (onLookupPokeId) onLookupPokeId(item.pokeId);
                 }}
                 className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[11px] font-bold text-amber-300 hover:border-amber-400 cursor-pointer transition-all"
-                title={`Inspect ${item.nickname || 'specimen'}`}
+                title={`Inspect ${item.nickname || 'pokepet'}`}
               >
-                {item.pokeId} ({dex.find((p) => p.id === item.pokemonId)?.name || 'Specimen'})
+                {item.pokeId} ({dex.find((p) => p.id === item.pokemonId)?.name || 'Pokepet'})
               </button>
             ))
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  const sample = 'ID8F3K9L2M4P';
-                  setPokeIdInput(sample);
-                  if (onLookupPokeId) onLookupPokeId(sample);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[11px] font-bold text-amber-300 hover:border-amber-400 cursor-pointer transition-all"
-              >
-                ID8F3K9L2M4P (Sample Lugia)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const sample = 'ID7A2B9C4D1E';
-                  setPokeIdInput(sample);
-                  if (onLookupPokeId) onLookupPokeId(sample);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[11px] font-bold text-sky-300 hover:border-sky-400 cursor-pointer transition-all"
-              >
-                ID7A2B9C4D1E (Sample Rayquaza)
-              </button>
-            </>
+            <span className="text-slate-500 font-mono text-[11px]">
+              No pet Pokémon registered yet. Register a Pokémon on the registration page to receive a unique site-wide POKEID.
+            </span>
           )}
         </div>
       </section>
 
-      {/* BATCH INPUT CARD */}
-      <BatchInputCard
-        dex={dex}
-        caughtSet={caughtSet}
-        livingSet={livingSet}
-        ownedGames={ownedGames}
-        isGuest={isGuest}
-        onRequestAuth={onRequestAuth}
-        onBatchMarkCaught={onBatchMarkCaught}
-        onNavigateToRegister={onNavigateToRegister}
-      />
-
-      {/* DEX SUGGESTIONS SECTION (UNDER BATCH INPUT) */}
+      {/* DEX SUGGESTIONS SECTION */}
       <DexSuggestionsSection
         dex={dex}
         caughtSet={caughtSet}
@@ -264,7 +227,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
         onOpenFullPage={onOpenFullPage}
         onNavigateToRegister={onNavigateToRegister}
         onNavigateToSettings={onNavigateToSettings}
-        onQuickCatch={onQuickCatch}
         isGuest={isGuest}
         onRequestAuth={onRequestAuth}
       />
@@ -287,7 +249,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               Register Pokémon
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Official gateway to input Pokémon. Generates unique 12-digit POKEIDs, validates origin game or HOME gift, level, and variants.
+              Gateway to register pet Pokémon. Generates unique 12-digit POKEIDs, validates origin game or HOME gift, level, and variants.
             </p>
           </div>
           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono-tabular">
@@ -296,7 +258,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Specimen Inventory */}
+        {/* Card 2: Pokepet Inventory */}
         <div
           onClick={onNavigateToInventory}
           className="group rounded-2xl bg-[#0F1522] border border-slate-800/80 hover:border-sky-500/60 p-5 flex flex-col justify-between gap-4 cursor-pointer transition-all hover:bg-slate-900/80 shadow-lg"
@@ -309,15 +271,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-100 group-hover:text-sky-300 transition-colors">
-              Specimen Inventory
+              Pokepet Inventory
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              View all instances with hidden POKEIDs, custom nicknames, level, origin game, and exportable Trainer Cards.
+              View all registered pokepets with hidden POKEIDs, custom nicknames, level, origin game, and Trainer Cards.
             </p>
           </div>
           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono-tabular">
-            <span className="text-slate-400">Logged Specimens</span>
-            <span className="text-sky-300 font-bold">{inventory.length} Instances</span>
+            <span className="text-slate-400">Registered Pokepets</span>
+            <span className="text-sky-300 font-bold">{inventory.length} Pokepets</span>
           </div>
         </div>
 
@@ -337,7 +299,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               Living Dex Boxes
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Explore 35 PC Boxes showing specimen levels, POKEIDs, origin labels ("Traded from...", "Gifted from Home", etc.) and slot diagrams.
+              Explore 35 PC Boxes showing pokepet levels, POKEIDs, origin labels ("Traded from...", "Gifted from Home", etc.) and slot diagrams.
             </p>
           </div>
           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono-tabular">
@@ -381,7 +343,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           gameCatches={gameCatches}
           onSelectPokemon={onSelectPokemon}
           onOpenFullPage={onOpenFullPage}
-          onToggleCaught={onToggleCaught}
         />
       </section>
 

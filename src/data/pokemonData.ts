@@ -1,13 +1,51 @@
-export type GameId =
-  | 'rb'
+export type CanonicalGameId =
+  | 'red'
+  | 'blue'
   | 'yellow'
-  | 'gs'
+  | 'gold'
+  | 'silver'
   | 'crystal'
+  | 'ruby'
+  | 'sapphire'
+  | 'emerald'
+  | 'firered'
+  | 'leafgreen'
+  | 'colo'
+  | 'xd'
+  | 'diamond'
+  | 'pearl'
+  | 'platinum'
+  | 'heartgold'
+  | 'soulsilver'
+  | 'black'
+  | 'white'
+  | 'black2'
+  | 'white2'
+  | 'x'
+  | 'y'
+  | 'omegaruby'
+  | 'alphasapphire'
+  | 'sun'
+  | 'moon'
+  | 'ultrasun'
+  | 'ultramoon'
+  | 'lgp'
+  | 'lge'
+  | 'pogo'
+  | 'sword'
+  | 'shield'
+  | 'bd'
+  | 'sp'
+  | 'pla'
+  | 'scarlet'
+  | 'violet';
+
+export type LegacyGameId =
+  | 'rb'
+  | 'gs'
   | 'rse'
   | 'frlg'
   | 'frlg_switch'
-  | 'colo'
-  | 'xd'
   | 'dppt'
   | 'hgss'
   | 'bw'
@@ -17,37 +55,56 @@ export type GameId =
   | 'sm'
   | 'usum'
   | 'lgpe'
-  | 'pogo'
   | 'swsh'
   | 'bdsp'
-  | 'pla'
   | 'sv';
 
-export const ALL_GAME_IDS: GameId[] = [
-  'rb',
+export type GameId = CanonicalGameId | LegacyGameId;
+
+export const ALL_CANONICAL_GAME_IDS: CanonicalGameId[] = [
+  'red',
+  'blue',
   'yellow',
-  'gs',
+  'gold',
+  'silver',
   'crystal',
-  'rse',
-  'frlg',
-  'frlg_switch',
+  'ruby',
+  'sapphire',
+  'emerald',
+  'firered',
+  'leafgreen',
   'colo',
   'xd',
-  'dppt',
-  'hgss',
-  'bw',
-  'b2w2',
-  'xy',
-  'oras',
-  'sm',
-  'usum',
-  'lgpe',
+  'diamond',
+  'pearl',
+  'platinum',
+  'heartgold',
+  'soulsilver',
+  'black',
+  'white',
+  'black2',
+  'white2',
+  'x',
+  'y',
+  'omegaruby',
+  'alphasapphire',
+  'sun',
+  'moon',
+  'ultrasun',
+  'ultramoon',
+  'lgp',
+  'lge',
   'pogo',
-  'swsh',
-  'bdsp',
+  'sword',
+  'shield',
+  'bd',
+  'sp',
   'pla',
-  'sv',
+  'scarlet',
+  'violet',
 ];
+
+export const ALL_GAME_IDS: GameId[] = [...ALL_CANONICAL_GAME_IDS];
 
 export type DlcId =
   | 'sv-teal-mask'
@@ -78,6 +135,9 @@ export interface GameInfo {
   baseDexName: string;
   hasPaidDlc: boolean;
   dlcPacks: DlcId[];
+  groupId: string;
+  groupTitle: string;
+  siblingGameIds: GameId[];
 }
 
 export interface GameAvailability {
@@ -91,6 +151,7 @@ export interface GameAvailability {
   whereToFind: string;
   acquisitionMethod: string;
   regionDexLabel: string;
+  pokedexCompletionGuide: string;
 }
 
 export interface PokeBankClosureRisk {
@@ -134,40 +195,38 @@ export interface PokemonEntry {
   primarySwitchSource: string;
 }
 
-export type GameCatchesMap = Record<GameId, number[]>;
+export type GameCatchesMap = Record<string, number[]>;
 
 export function createEmptyGameCatchesMap(): GameCatchesMap {
-  return {
-    rb: [],
-    yellow: [],
-    gs: [],
-    crystal: [],
-    rse: [],
-    frlg: [],
-    frlg_switch: [],
-    colo: [],
-    xd: [],
-    dppt: [],
-    hgss: [],
-    bw: [],
-    b2w2: [],
-    xy: [],
-    oras: [],
-    sm: [],
-    usum: [],
-    lgpe: [],
-    pogo: [],
-    swsh: [],
-    bdsp: [],
-    pla: [],
-    sv: [],
-  };
+  const map: Record<string, number[]> = {};
+  for (const gId of ALL_GAME_IDS) {
+    map[gId] = [];
+  }
+  // Also preserve legacy slots for backwards compatibility
+  map['rb'] = [];
+  map['gs'] = [];
+  map['rse'] = [];
+  map['frlg'] = [];
+  map['frlg_switch'] = [];
+  map['dppt'] = [];
+  map['hgss'] = [];
+  map['bw'] = [];
+  map['b2w2'] = [];
+  map['xy'] = [];
+  map['oras'] = [];
+  map['sm'] = [];
+  map['usum'] = [];
+  map['lgpe'] = [];
+  map['swsh'] = [];
+  map['bdsp'] = [];
+  map['sv'] = [];
+  return map;
 }
 
 export const DLC_PACKS: DlcPackInfo[] = [
   {
     id: 'sv-teal-mask',
-    gameId: 'sv',
+    gameId: 'scarlet',
     gameTitle: 'Pokémon Scarlet & Violet',
     name: 'The Hidden Treasure of Area Zero Part 1: The Teal Mask',
     shortName: 'The Teal Mask DLC',
@@ -184,7 +243,7 @@ export const DLC_PACKS: DlcPackInfo[] = [
   },
   {
     id: 'sv-indigo-disk',
-    gameId: 'sv',
+    gameId: 'scarlet',
     gameTitle: 'Pokémon Scarlet & Violet',
     name: 'The Hidden Treasure of Area Zero Part 2: The Indigo Disk',
     shortName: 'The Indigo Disk DLC',
@@ -201,7 +260,7 @@ export const DLC_PACKS: DlcPackInfo[] = [
   },
   {
     id: 'swsh-isle-of-armor',
-    gameId: 'swsh',
+    gameId: 'sword',
     gameTitle: 'Pokémon Sword & Shield',
     name: 'Sword & Shield Expansion Pass Part 1: The Isle of Armor',
     shortName: 'Isle of Armor DLC',
@@ -218,7 +277,7 @@ export const DLC_PACKS: DlcPackInfo[] = [
   },
   {
     id: 'swsh-crown-tundra',
-    gameId: 'swsh',
+    gameId: 'sword',
     gameTitle: 'Pokémon Sword & Shield',
     name: 'Sword & Shield Expansion Pass Part 2: The Crown Tundra',
     shortName: 'Crown Tundra DLC',
@@ -238,9 +297,9 @@ export const DLC_PACKS: DlcPackInfo[] = [
 export const GAMES: GameInfo[] = [
   // Generation I
   {
-    id: 'rb',
-    title: 'Pokémon Red & Blue',
-    shortTitle: 'Red / Blue',
+    id: 'red',
+    title: 'Pokémon Red',
+    shortTitle: 'Red',
     generation: 1,
     generationLabel: 'Gen I — Game Boy',
     platform: 'Game Boy',
@@ -248,6 +307,24 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Kanto Pokédex (#001–#151)',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'red',
+    groupTitle: 'Red',
+    siblingGameIds: ['blue', 'yellow'],
+  },
+  {
+    id: 'blue',
+    title: 'Pokémon Blue',
+    shortTitle: 'Blue',
+    generation: 1,
+    generationLabel: 'Gen I — Game Boy',
+    platform: 'Game Boy',
+    region: 'Kanto',
+    baseDexName: 'Kanto Pokédex (#001–#151)',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'blue',
+    groupTitle: 'Blue',
+    siblingGameIds: ['red', 'yellow'],
   },
   {
     id: 'yellow',
@@ -260,12 +337,16 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Kanto Pokédex (#001–#151)',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'yellow',
+    groupTitle: 'Yellow',
+    siblingGameIds: ['red', 'blue'],
   },
+
   // Generation II
   {
-    id: 'gs',
-    title: 'Pokémon Gold & Silver',
-    shortTitle: 'Gold / Silver',
+    id: 'gold',
+    title: 'Pokémon Gold',
+    shortTitle: 'Gold',
     generation: 2,
     generationLabel: 'Gen II — Game Boy Color',
     platform: 'Game Boy Color',
@@ -273,6 +354,24 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'New Pokédex (#001–#251)',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'gold',
+    groupTitle: 'Gold',
+    siblingGameIds: ['silver', 'crystal'],
+  },
+  {
+    id: 'silver',
+    title: 'Pokémon Silver',
+    shortTitle: 'Silver',
+    generation: 2,
+    generationLabel: 'Gen II — Game Boy Color',
+    platform: 'Game Boy Color',
+    region: 'Johto & Kanto',
+    baseDexName: 'New Pokédex (#001–#251)',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'silver',
+    groupTitle: 'Silver',
+    siblingGameIds: ['gold', 'crystal'],
   },
   {
     id: 'crystal',
@@ -285,12 +384,16 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'New Pokédex (#001–#251)',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'crystal',
+    groupTitle: 'Crystal',
+    siblingGameIds: ['gold', 'silver'],
   },
+
   // Generation III
   {
-    id: 'rse',
-    title: 'Pokémon Ruby, Sapphire & Emerald',
-    shortTitle: 'Ruby / Sapphire / Emerald',
+    id: 'ruby',
+    title: 'Pokémon Ruby',
+    shortTitle: 'Ruby',
     generation: 3,
     generationLabel: 'Gen III — Game Boy Advance',
     platform: 'Game Boy Advance',
@@ -298,11 +401,44 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Hoenn Regional Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'ruby',
+    groupTitle: 'Ruby',
+    siblingGameIds: ['sapphire', 'emerald'],
   },
   {
-    id: 'frlg',
-    title: 'Pokémon FireRed & LeafGreen (GBA)',
-    shortTitle: 'FireRed / LeafGreen (GBA)',
+    id: 'sapphire',
+    title: 'Pokémon Sapphire',
+    shortTitle: 'Sapphire',
+    generation: 3,
+    generationLabel: 'Gen III — Game Boy Advance',
+    platform: 'Game Boy Advance',
+    region: 'Hoenn',
+    baseDexName: 'Hoenn Regional Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'sapphire',
+    groupTitle: 'Sapphire',
+    siblingGameIds: ['ruby', 'emerald'],
+  },
+  {
+    id: 'emerald',
+    title: 'Pokémon Emerald',
+    shortTitle: 'Emerald',
+    generation: 3,
+    generationLabel: 'Gen III — Game Boy Advance',
+    platform: 'Game Boy Advance',
+    region: 'Hoenn',
+    baseDexName: 'Hoenn Regional Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'emerald',
+    groupTitle: 'Emerald',
+    siblingGameIds: ['ruby', 'sapphire'],
+  },
+  {
+    id: 'firered',
+    title: 'Pokémon FireRed',
+    shortTitle: 'FireRed',
     generation: 3,
     generationLabel: 'Gen III — Game Boy Advance',
     platform: 'Game Boy Advance',
@@ -310,18 +446,24 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Kanto & Sevii Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'firered',
+    groupTitle: 'FireRed',
+    siblingGameIds: ['leafgreen'],
   },
   {
-    id: 'frlg_switch',
-    title: 'Pokémon FireRed & LeafGreen (Switch / NSO)',
-    shortTitle: 'FireRed / LeafGreen (Switch)',
+    id: 'leafgreen',
+    title: 'Pokémon LeafGreen',
+    shortTitle: 'LeafGreen',
     generation: 3,
-    generationLabel: 'Gen III — Nintendo Switch',
-    platform: 'Nintendo Switch',
+    generationLabel: 'Gen III — Game Boy Advance',
+    platform: 'Game Boy Advance',
     region: 'Kanto & Sevii Islands',
-    baseDexName: 'Kanto & Sevii Dex (Switch)',
+    baseDexName: 'Kanto & Sevii Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'leafgreen',
+    groupTitle: 'LeafGreen',
+    siblingGameIds: ['firered'],
   },
   {
     id: 'colo',
@@ -334,11 +476,14 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Orre Snag Pokédex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'colo',
+    groupTitle: 'Colosseum',
+    siblingGameIds: ['xd'],
   },
   {
     id: 'xd',
     title: 'Pokémon XD: Gale of Darkness',
-    shortTitle: 'XD: Gale of Darkness',
+    shortTitle: 'XD',
     generation: 3,
     generationLabel: 'Gen III — Nintendo GameCube',
     platform: 'Nintendo GameCube',
@@ -346,111 +491,277 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Orre Shadow Pokédex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'xd',
+    groupTitle: 'XD: Gale of Darkness',
+    siblingGameIds: ['colo'],
   },
+
   // Generation IV
   {
-    id: 'dppt',
-    title: 'Pokémon Diamond, Pearl & Platinum',
-    shortTitle: 'Diamond / Pearl / Platinum',
+    id: 'diamond',
+    title: 'Pokémon Diamond',
+    shortTitle: 'Diamond',
     generation: 4,
     generationLabel: 'Gen IV — Nintendo DS',
     platform: 'Nintendo DS',
     region: 'Sinnoh',
-    baseDexName: 'Sinnoh Regional & Post-Game Dex',
+    baseDexName: 'Sinnoh Regional Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'diamond',
+    groupTitle: 'Diamond',
+    siblingGameIds: ['pearl', 'platinum'],
   },
   {
-    id: 'hgss',
-    title: 'Pokémon HeartGold & SoulSilver',
-    shortTitle: 'HeartGold / SoulSilver',
+    id: 'pearl',
+    title: 'Pokémon Pearl',
+    shortTitle: 'Pearl',
+    generation: 4,
+    generationLabel: 'Gen IV — Nintendo DS',
+    platform: 'Nintendo DS',
+    region: 'Sinnoh',
+    baseDexName: 'Sinnoh Regional Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'pearl',
+    groupTitle: 'Pearl',
+    siblingGameIds: ['diamond', 'platinum'],
+  },
+  {
+    id: 'platinum',
+    title: 'Pokémon Platinum',
+    shortTitle: 'Platinum',
+    generation: 4,
+    generationLabel: 'Gen IV — Nintendo DS',
+    platform: 'Nintendo DS',
+    region: 'Sinnoh',
+    baseDexName: 'Expanded Sinnoh Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'platinum',
+    groupTitle: 'Platinum',
+    siblingGameIds: ['diamond', 'pearl'],
+  },
+  {
+    id: 'heartgold',
+    title: 'Pokémon HeartGold',
+    shortTitle: 'HeartGold',
     generation: 4,
     generationLabel: 'Gen IV — Nintendo DS',
     platform: 'Nintendo DS',
     region: 'Johto & Kanto',
-    baseDexName: 'Johto, Kanto & Safari Zone Dex',
+    baseDexName: 'Johto & Kanto Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'heartgold',
+    groupTitle: 'HeartGold',
+    siblingGameIds: ['soulsilver'],
   },
+  {
+    id: 'soulsilver',
+    title: 'Pokémon SoulSilver',
+    shortTitle: 'SoulSilver',
+    generation: 4,
+    generationLabel: 'Gen IV — Nintendo DS',
+    platform: 'Nintendo DS',
+    region: 'Johto & Kanto',
+    baseDexName: 'Johto & Kanto Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'soulsilver',
+    groupTitle: 'SoulSilver',
+    siblingGameIds: ['heartgold'],
+  },
+
   // Generation V
   {
-    id: 'bw',
-    title: 'Pokémon Black & White',
-    shortTitle: 'Black / White',
+    id: 'black',
+    title: 'Pokémon Black',
+    shortTitle: 'Black',
     generation: 5,
     generationLabel: 'Gen V — Nintendo DS',
     platform: 'Nintendo DS',
     region: 'Unova',
-    baseDexName: 'Unova Regional & East Unova Dex',
+    baseDexName: 'Unova Regional Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'black',
+    groupTitle: 'Black',
+    siblingGameIds: ['white'],
   },
   {
-    id: 'b2w2',
-    title: 'Pokémon Black 2 & White 2',
-    shortTitle: 'Black 2 / White 2',
+    id: 'white',
+    title: 'Pokémon White',
+    shortTitle: 'White',
     generation: 5,
     generationLabel: 'Gen V — Nintendo DS',
     platform: 'Nintendo DS',
     region: 'Unova',
-    baseDexName: 'New Unova & Hidden Grotto Dex',
+    baseDexName: 'Unova Regional Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'white',
+    groupTitle: 'White',
+    siblingGameIds: ['black'],
   },
+  {
+    id: 'black2',
+    title: 'Pokémon Black 2',
+    shortTitle: 'Black 2',
+    generation: 5,
+    generationLabel: 'Gen V — Nintendo DS',
+    platform: 'Nintendo DS',
+    region: 'Unova',
+    baseDexName: 'New Unova Regional Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'black2',
+    groupTitle: 'Black 2',
+    siblingGameIds: ['white2'],
+  },
+  {
+    id: 'white2',
+    title: 'Pokémon White 2',
+    shortTitle: 'White 2',
+    generation: 5,
+    generationLabel: 'Gen V — Nintendo DS',
+    platform: 'Nintendo DS',
+    region: 'Unova',
+    baseDexName: 'New Unova Regional Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'white2',
+    groupTitle: 'White 2',
+    siblingGameIds: ['black2'],
+  },
+
   // Generation VI
   {
-    id: 'xy',
-    title: 'Pokémon X & Y',
-    shortTitle: 'X / Y',
+    id: 'x',
+    title: 'Pokémon X',
+    shortTitle: 'X',
     generation: 6,
     generationLabel: 'Gen VI — Nintendo 3DS',
     platform: 'Nintendo 3DS',
     region: 'Kalos',
-    baseDexName: 'Central, Coastal & Mountain Kalos Dex',
+    baseDexName: 'Kalos Regional Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'x',
+    groupTitle: 'X',
+    siblingGameIds: ['y'],
   },
   {
-    id: 'oras',
-    title: 'Pokémon Omega Ruby & Alpha Sapphire',
-    shortTitle: 'Omega Ruby / Alpha Sapphire',
+    id: 'y',
+    title: 'Pokémon Y',
+    shortTitle: 'Y',
+    generation: 6,
+    generationLabel: 'Gen VI — Nintendo 3DS',
+    platform: 'Nintendo 3DS',
+    region: 'Kalos',
+    baseDexName: 'Kalos Regional Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'y',
+    groupTitle: 'Y',
+    siblingGameIds: ['x'],
+  },
+  {
+    id: 'omegaruby',
+    title: 'Pokémon Omega Ruby',
+    shortTitle: 'Omega Ruby',
     generation: 6,
     generationLabel: 'Gen VI — Nintendo 3DS',
     platform: 'Nintendo 3DS',
     region: 'Hoenn',
-    baseDexName: 'Hoenn DexNav & Mirage Spots',
+    baseDexName: 'Hoenn Regional Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'omegaruby',
+    groupTitle: 'Omega Ruby',
+    siblingGameIds: ['alphasapphire'],
   },
+  {
+    id: 'alphasapphire',
+    title: 'Pokémon Alpha Sapphire',
+    shortTitle: 'Alpha Sapphire',
+    generation: 6,
+    generationLabel: 'Gen VI — Nintendo 3DS',
+    platform: 'Nintendo 3DS',
+    region: 'Hoenn',
+    baseDexName: 'Hoenn Regional Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'alphasapphire',
+    groupTitle: 'Alpha Sapphire',
+    siblingGameIds: ['omegaruby'],
+  },
+
   // Generation VII
   {
-    id: 'sm',
-    title: 'Pokémon Sun & Moon',
-    shortTitle: 'Sun / Moon',
+    id: 'sun',
+    title: 'Pokémon Sun',
+    shortTitle: 'Sun',
     generation: 7,
-    generationLabel: 'Gen VII — 3DS / Switch',
+    generationLabel: 'Gen VII — Nintendo 3DS',
     platform: 'Nintendo 3DS',
     region: 'Alola',
-    baseDexName: 'Alola Four-Island & Island Scan Dex',
+    baseDexName: 'Alola Regional Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'sun',
+    groupTitle: 'Sun',
+    siblingGameIds: ['moon'],
   },
   {
-    id: 'usum',
-    title: 'Pokémon Ultra Sun & Ultra Moon',
-    shortTitle: 'Ultra Sun / Ultra Moon',
+    id: 'moon',
+    title: 'Pokémon Moon',
+    shortTitle: 'Moon',
     generation: 7,
-    generationLabel: 'Gen VII — 3DS / Switch',
+    generationLabel: 'Gen VII — Nintendo 3DS',
     platform: 'Nintendo 3DS',
     region: 'Alola',
-    baseDexName: 'Expanded Alola & Ultra Wormhole Dex',
+    baseDexName: 'Alola Regional Dex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'moon',
+    groupTitle: 'Moon',
+    siblingGameIds: ['sun'],
   },
   {
-    id: 'lgpe',
-    title: "Pokémon Let's Go, Pikachu! & Eevee!",
-    shortTitle: "Let's Go Pikachu / Eevee",
+    id: 'ultrasun',
+    title: 'Pokémon Ultra Sun',
+    shortTitle: 'Ultra Sun',
+    generation: 7,
+    generationLabel: 'Gen VII — Nintendo 3DS',
+    platform: 'Nintendo 3DS',
+    region: 'Alola',
+    baseDexName: 'Expanded Alola Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'ultrasun',
+    groupTitle: 'Ultra Sun',
+    siblingGameIds: ['ultramoon'],
+  },
+  {
+    id: 'ultramoon',
+    title: 'Pokémon Ultra Moon',
+    shortTitle: 'Ultra Moon',
+    generation: 7,
+    generationLabel: 'Gen VII — Nintendo 3DS',
+    platform: 'Nintendo 3DS',
+    region: 'Alola',
+    baseDexName: 'Expanded Alola Dex',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'ultramoon',
+    groupTitle: 'Ultra Moon',
+    siblingGameIds: ['ultrasun'],
+  },
+  {
+    id: 'lgp',
+    title: "Pokémon Let's Go, Pikachu!",
+    shortTitle: "Let's Go Pikachu",
     generation: 7,
     generationLabel: 'Gen VII — Nintendo Switch',
     platform: 'Nintendo Switch',
@@ -458,36 +769,76 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Kanto Pokédex (#001–#151)',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'lgp',
+    groupTitle: "Let's Go Pikachu",
+    siblingGameIds: ['lge'],
+  },
+  {
+    id: 'lge',
+    title: "Pokémon Let's Go, Eevee!",
+    shortTitle: "Let's Go Eevee",
+    generation: 7,
+    generationLabel: 'Gen VII — Nintendo Switch',
+    platform: 'Nintendo Switch',
+    region: 'Kanto',
+    baseDexName: 'Kanto Pokédex (#001–#151)',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'lge',
+    groupTitle: "Let's Go Eevee",
+    siblingGameIds: ['lgp'],
   },
   {
     id: 'pogo',
     title: 'Pokémon GO',
     shortTitle: 'Pokémon GO',
     generation: 7,
-    generationLabel: 'Mobile — Cross-Gen (GO Transporter)',
+    generationLabel: 'Mobile — Cross-Gen (HOME Transporter)',
     platform: 'iOS / Android',
     region: 'Global Real-World',
-    baseDexName: 'GO Global Pokédex (HOME Connected)',
+    baseDexName: 'GO Global Pokédex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'pogo',
+    groupTitle: 'Pokémon GO',
+    siblingGameIds: [],
   },
+
   // Generation VIII
   {
-    id: 'swsh',
-    title: 'Pokémon Sword & Shield',
-    shortTitle: 'Sword / Shield',
+    id: 'sword',
+    title: 'Pokémon Sword',
+    shortTitle: 'Sword',
     generation: 8,
     generationLabel: 'Gen VIII — Nintendo Switch',
     platform: 'Nintendo Switch',
     region: 'Galar',
-    baseDexName: 'Galar Base Dex (+ DLC Expansions)',
+    baseDexName: 'Galar Regional Dex',
     hasPaidDlc: true,
     dlcPacks: ['swsh-isle-of-armor', 'swsh-crown-tundra'],
+    groupId: 'sword',
+    groupTitle: 'Sword',
+    siblingGameIds: ['shield'],
   },
   {
-    id: 'bdsp',
-    title: 'Pokémon Brilliant Diamond & Shining Pearl',
-    shortTitle: 'Brilliant Diamond / Shining Pearl',
+    id: 'shield',
+    title: 'Pokémon Shield',
+    shortTitle: 'Shield',
+    generation: 8,
+    generationLabel: 'Gen VIII — Nintendo Switch',
+    platform: 'Nintendo Switch',
+    region: 'Galar',
+    baseDexName: 'Galar Regional Dex',
+    hasPaidDlc: true,
+    dlcPacks: ['swsh-isle-of-armor', 'swsh-crown-tundra'],
+    groupId: 'shield',
+    groupTitle: 'Shield',
+    siblingGameIds: ['sword'],
+  },
+  {
+    id: 'bd',
+    title: 'Pokémon Brilliant Diamond',
+    shortTitle: 'Brilliant Diamond',
     generation: 8,
     generationLabel: 'Gen VIII — Nintendo Switch',
     platform: 'Nintendo Switch',
@@ -495,6 +846,24 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Sinnoh & Grand Underground (#001–#493)',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'bd',
+    groupTitle: 'Brilliant Diamond',
+    siblingGameIds: ['sp'],
+  },
+  {
+    id: 'sp',
+    title: 'Pokémon Shining Pearl',
+    shortTitle: 'Shining Pearl',
+    generation: 8,
+    generationLabel: 'Gen VIII — Nintendo Switch',
+    platform: 'Nintendo Switch',
+    region: 'Sinnoh',
+    baseDexName: 'Sinnoh & Grand Underground (#001–#493)',
+    hasPaidDlc: false,
+    dlcPacks: [],
+    groupId: 'sp',
+    groupTitle: 'Shining Pearl',
+    siblingGameIds: ['bd'],
   },
   {
     id: 'pla',
@@ -507,12 +876,16 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Hisui Survey Pokédex',
     hasPaidDlc: false,
     dlcPacks: [],
+    groupId: 'pla',
+    groupTitle: 'Legends: Arceus',
+    siblingGameIds: [],
   },
+
   // Generation IX
   {
-    id: 'sv',
-    title: 'Pokémon Scarlet & Violet',
-    shortTitle: 'Scarlet / Violet',
+    id: 'scarlet',
+    title: 'Pokémon Scarlet',
+    shortTitle: 'Scarlet',
     generation: 9,
     generationLabel: 'Gen IX — Nintendo Switch',
     platform: 'Nintendo Switch',
@@ -520,6 +893,24 @@ export const GAMES: GameInfo[] = [
     baseDexName: 'Paldea Base Dex (+ DLC Expansions)',
     hasPaidDlc: true,
     dlcPacks: ['sv-teal-mask', 'sv-indigo-disk'],
+    groupId: 'scarlet',
+    groupTitle: 'Scarlet',
+    siblingGameIds: ['violet'],
+  },
+  {
+    id: 'violet',
+    title: 'Pokémon Violet',
+    shortTitle: 'Violet',
+    generation: 9,
+    generationLabel: 'Gen IX — Nintendo Switch',
+    platform: 'Nintendo Switch',
+    region: 'Paldea',
+    baseDexName: 'Paldea Base Dex (+ DLC Expansions)',
+    hasPaidDlc: true,
+    dlcPacks: ['sv-teal-mask', 'sv-indigo-disk'],
+    groupId: 'violet',
+    groupTitle: 'Violet',
+    siblingGameIds: ['scarlet'],
   },
 ];
 
@@ -527,47 +918,47 @@ export const GAME_GENERATION_GROUPS = [
   {
     gen: 1,
     title: 'Generation I — Game Boy',
-    games: ['rb', 'yellow'] as GameId[],
+    games: ['red', 'blue', 'yellow'] as GameId[],
   },
   {
     gen: 2,
     title: 'Generation II — Game Boy Color',
-    games: ['gs', 'crystal'] as GameId[],
+    games: ['gold', 'silver', 'crystal'] as GameId[],
   },
   {
     gen: 3,
     title: 'Generation III — GBA & GameCube',
-    games: ['rse', 'frlg', 'frlg_switch', 'colo', 'xd'] as GameId[],
+    games: ['ruby', 'sapphire', 'emerald', 'firered', 'leafgreen', 'colo', 'xd'] as GameId[],
   },
   {
     gen: 4,
     title: 'Generation IV — Nintendo DS',
-    games: ['dppt', 'hgss'] as GameId[],
+    games: ['diamond', 'pearl', 'platinum', 'heartgold', 'soulsilver'] as GameId[],
   },
   {
     gen: 5,
     title: 'Generation V — Nintendo DS',
-    games: ['bw', 'b2w2'] as GameId[],
+    games: ['black', 'white', 'black2', 'white2'] as GameId[],
   },
   {
     gen: 6,
     title: 'Generation VI — Nintendo 3DS',
-    games: ['xy', 'oras'] as GameId[],
+    games: ['x', 'y', 'omegaruby', 'alphasapphire'] as GameId[],
   },
   {
     gen: 7,
     title: 'Generation VII — 3DS, Switch & GO',
-    games: ['sm', 'usum', 'lgpe', 'pogo'] as GameId[],
+    games: ['sun', 'moon', 'ultrasun', 'ultramoon', 'lgp', 'lge', 'pogo'] as GameId[],
   },
   {
     gen: 8,
     title: 'Generation VIII — Nintendo Switch',
-    games: ['swsh', 'bdsp', 'pla'] as GameId[],
+    games: ['sword', 'shield', 'bd', 'sp', 'pla'] as GameId[],
   },
   {
     gen: 9,
     title: 'Generation IX — Nintendo Switch',
-    games: ['sv'] as GameId[],
+    games: ['scarlet', 'violet'] as GameId[],
   },
 ];
 
@@ -984,13 +1375,42 @@ import {
   isGen2Available,
   isGen3Available,
   COMPLETELY_ABSENT_FROM_SWITCH,
+  SWORD_EXCLUSIVES,
+  SHIELD_EXCLUSIVES,
+  SCARLET_EXCLUSIVES,
+  VIOLET_EXCLUSIVES,
+  BD_EXCLUSIVES,
+  SP_EXCLUSIVES,
+  LGP_EXCLUSIVES,
+  LGE_EXCLUSIVES,
+  RED_EXCLUSIVES,
+  BLUE_EXCLUSIVES,
+  GOLD_EXCLUSIVES,
+  SILVER_EXCLUSIVES,
+  RUBY_EXCLUSIVES,
+  SAPPHIRE_EXCLUSIVES,
+  FIRERED_EXCLUSIVES,
+  LEAFGREEN_EXCLUSIVES,
+  DIAMOND_EXCLUSIVES,
+  PEARL_EXCLUSIVES,
+  HEARTGOLD_EXCLUSIVES,
+  SOULSILVER_EXCLUSIVES,
+  BLACK_EXCLUSIVES,
+  WHITE_EXCLUSIVES,
+  BLACK2_EXCLUSIVES,
+  WHITE2_EXCLUSIVES,
+  X_EXCLUSIVES,
+  Y_EXCLUSIVES,
+  OMEGARUBY_EXCLUSIVES,
+  ALPHASAPPHIRE_EXCLUSIVES,
+  SUN_EXCLUSIVES,
+  MOON_EXCLUSIVES,
+  ULTRASUN_EXCLUSIVES,
+  ULTRAMOON_EXCLUSIVES,
 } from './pokemonAvailabilityData';
 
 function computeAvailabilityForPokemon(id: number): Record<GameId, GameAvailability> {
-  const genAndReg = getGenerationAndRegion(id);
-  const gen = genAndReg.generation;
   const result: Partial<Record<GameId, GameAvailability>> = {};
-
   const isAbsentFromSwitch = COMPLETELY_ABSENT_FROM_SWITCH.has(id);
 
   for (const game of GAMES) {
@@ -1000,153 +1420,763 @@ function computeAvailabilityForPokemon(id: number): Record<GameId, GameAvailabil
     let requiresDlc = false;
     let dlcId: DlcId | undefined = undefined;
     let dlcName: string | undefined = undefined;
+    let pokedexCompletionGuide = `Unobtainable in ${game.shortTitle} (transfer via Pokémon HOME)`;
 
-    // Strict generational hard ceilings
-    if (game.id === 'rb' || game.id === 'yellow') {
-      if (isGen1Available(id)) {
-        status = 'base';
-        whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
-        if (game.id === 'rb') {
-          versionExclusive = id % 2 === 1 ? 'Red Version' : 'Blue Version';
-        } else {
-          versionExclusive = 'Yellow Special Edition';
+    switch (game.id) {
+      // Gen 1
+      case 'red': {
+        if (isGen1Available(id)) {
+          if (BLUE_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Blue';
+            whereToFind = 'Exclusive to Pokémon Blue';
+            pokedexCompletionGuide = 'Trade with a Pokémon Blue player';
+          } else {
+            status = 'base';
+            whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
+            versionExclusive = RED_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Red' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
         }
+        break;
       }
-    } else if (game.id === 'gs' || game.id === 'crystal') {
-      if (isGen2Available(id)) {
-        status = 'base';
-        whereToFind = JOHTO_LOCATIONS[id % JOHTO_LOCATIONS.length];
-        if (game.id === 'gs') {
-          versionExclusive = id % 2 === 1 ? 'Gold Version' : 'Silver Version';
-        } else {
-          versionExclusive = 'Crystal Version';
+      case 'blue': {
+        if (isGen1Available(id)) {
+          if (RED_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Red';
+            whereToFind = 'Exclusive to Pokémon Red';
+            pokedexCompletionGuide = 'Trade with a Pokémon Red player';
+          } else {
+            status = 'base';
+            whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
+            versionExclusive = BLUE_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Blue' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
         }
+        break;
       }
-    } else if (game.id === 'rse') {
-      if (isGen3Available(id)) {
-        status = id <= 386 ? 'base' : 'unavailable';
-        whereToFind = HOENN_LOCATIONS[id % HOENN_LOCATIONS.length];
-        versionExclusive = id % 2 === 1 ? 'Ruby / Emerald' : 'Sapphire / Emerald';
-      }
-    } else if (game.id === 'frlg' || game.id === 'frlg_switch') {
-      if (isGen3Available(id)) {
-        status = id <= 151 || id <= 251 ? 'base' : 'transfer_only';
-        whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
-        versionExclusive = id % 2 === 1 ? 'FireRed' : 'LeafGreen';
-      }
-    } else if (game.id === 'colo') {
-      if (COLO_SHADOW_SPECIES.has(id)) {
-        status = 'base';
-        whereToFind = 'Snag Shadow Pokémon in Orre & Purify';
-        versionExclusive = 'Nintendo GameCube';
-      } else if (isGen3Available(id)) {
-        status = 'transfer_only';
-        whereToFind = 'Transfer from GBA via GameCube Link Cable';
-        versionExclusive = 'GBA Cable Transfer';
-      }
-    } else if (game.id === 'xd') {
-      if (XD_SHADOW_SPECIES.has(id)) {
-        status = 'base';
-        whereToFind = 'Snag Shadow Pokémon in Orre & Purify in Chamber';
-        versionExclusive = 'Nintendo GameCube';
-      } else if (isGen3Available(id)) {
-        status = 'transfer_only';
-        whereToFind = 'Transfer from GBA via GameCube Link Cable';
-        versionExclusive = 'GBA Cable Transfer';
-      }
-    } else if (game.id === 'dppt') {
-      if (id <= 493) {
-        status = 'base';
-        whereToFind = SINNOH_LOCATIONS[id % SINNOH_LOCATIONS.length];
-      }
-    } else if (game.id === 'hgss') {
-      if (id <= 493) {
-        status = 'base';
-        whereToFind = JOHTO_LOCATIONS[id % JOHTO_LOCATIONS.length];
-      }
-    } else if (game.id === 'bw' || game.id === 'b2w2') {
-      if (id <= 649) {
-        status = 'base';
-        whereToFind = UNOVA_LOCATIONS[id % UNOVA_LOCATIONS.length];
-      }
-    } else if (game.id === 'xy' || game.id === 'oras') {
-      if (id <= 721) {
-        status = 'base';
-        whereToFind = game.id === 'xy' ? KALOS_LOCATIONS[id % KALOS_LOCATIONS.length] : HOENN_LOCATIONS[id % HOENN_LOCATIONS.length];
-      }
-    } else if (game.id === 'sm' || game.id === 'usum') {
-      if (id <= (game.id === 'sm' ? 802 : 807)) {
-        status = 'base';
-        whereToFind = ALOLA_LOCATIONS[id % ALOLA_LOCATIONS.length];
-      }
-    } else if (game.id === 'lgpe') {
-      if (isLgpeAvailable(id)) {
-        status = 'base';
-        whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
-        versionExclusive = id % 2 === 1 ? 'Pikachu Edition' : 'Eevee Edition';
-      }
-    } else if (game.id === 'bdsp') {
-      if (isBdspAvailable(id)) {
-        status = 'base';
-        whereToFind = SINNOH_LOCATIONS[id % SINNOH_LOCATIONS.length];
-        versionExclusive = id % 2 === 1 ? 'Brilliant Diamond' : 'Shining Pearl';
-      }
-    } else if (game.id === 'pla') {
-      if (PLA_HISUI_DEX_SPECIES.has(id)) {
-        status = 'base';
-        whereToFind = 'Hisui Survey Fields & Space-Time Distortions';
-        versionExclusive = 'Single Version Game';
-      }
-    } else if (game.id === 'pogo') {
-      if (id <= 1017 && !isAbsentFromSwitch) {
-        status = 'base';
-        whereToFind = 'Wild Spawns, Field Research & Raid Battles (Global)';
-      }
-    } else if (game.id === 'swsh') {
-      if (!isAbsentFromSwitch && id <= 898) {
-        if (SWSH_GALAR_BASE_SPECIES.has(id)) {
+      case 'yellow': {
+        if (isGen1Available(id)) {
           status = 'base';
-          whereToFind = GALAR_LOCATIONS[id % GALAR_LOCATIONS.length];
-          versionExclusive = id % 2 === 1 ? 'Sword' : 'Shield';
-        } else if (SWSH_ISLE_OF_ARMOR_SPECIES.has(id)) {
-          status = 'dlc';
-          requiresDlc = true;
-          dlcId = 'swsh-isle-of-armor';
-          dlcName = 'Isle of Armor DLC';
-          whereToFind = 'Fields of Honor & Challenge Beach (Isle of Armor)';
-        } else if (SWSH_CROWN_TUNDRA_SPECIES.has(id)) {
-          status = 'dlc';
-          requiresDlc = true;
-          dlcId = 'swsh-crown-tundra';
-          dlcName = 'Crown Tundra DLC';
-          whereToFind = 'Slippery Slope & Max Lair (Crown Tundra)';
-        } else if (SWSH_TRANSFER_ONLY_SPECIES.has(id)) {
-          status = 'transfer_only';
-          whereToFind = 'Transfer via Pokémon HOME or Past Gen';
+          whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
+          versionExclusive = 'Yellow Edition';
+          pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
         }
+        break;
       }
-    } else if (game.id === 'sv') {
-      if (!isAbsentFromSwitch && id <= 1025) {
-        if (SV_PALDEA_BASE_SPECIES.has(id)) {
-          status = 'base';
-          whereToFind = PALDEA_LOCATIONS[id % PALDEA_LOCATIONS.length];
-          versionExclusive = id % 2 === 1 ? 'Scarlet' : 'Violet';
-        } else if (SV_TEAL_MASK_SPECIES.has(id)) {
-          status = 'dlc';
-          requiresDlc = true;
-          dlcId = 'sv-teal-mask';
-          dlcName = 'The Teal Mask DLC';
-          whereToFind = 'Kitakami Wilderness, Oni Mountain & Apple Hills';
-        } else if (SV_INDIGO_DISK_SPECIES.has(id)) {
-          status = 'dlc';
-          requiresDlc = true;
-          dlcId = 'sv-indigo-disk';
-          dlcName = 'The Indigo Disk DLC';
-          whereToFind = 'Blueberry Academy Terarium Biomes';
-        } else if (SV_TRANSFER_ONLY_SPECIES.has(id)) {
-          status = 'transfer_only';
-          whereToFind = 'Transfer via Pokémon HOME';
+
+      // Gen 2
+      case 'gold': {
+        if (isGen2Available(id)) {
+          if (SILVER_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Silver';
+            whereToFind = 'Exclusive to Pokémon Silver';
+            pokedexCompletionGuide = 'Trade with a Pokémon Silver player';
+          } else {
+            status = 'base';
+            whereToFind = JOHTO_LOCATIONS[id % JOHTO_LOCATIONS.length];
+            versionExclusive = GOLD_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Gold' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
         }
+        break;
+      }
+      case 'silver': {
+        if (isGen2Available(id)) {
+          if (GOLD_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Gold';
+            whereToFind = 'Exclusive to Pokémon Gold';
+            pokedexCompletionGuide = 'Trade with a Pokémon Gold player';
+          } else {
+            status = 'base';
+            whereToFind = JOHTO_LOCATIONS[id % JOHTO_LOCATIONS.length];
+            versionExclusive = SILVER_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Silver' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'crystal': {
+        if (isGen2Available(id)) {
+          status = 'base';
+          whereToFind = JOHTO_LOCATIONS[id % JOHTO_LOCATIONS.length];
+          versionExclusive = 'Crystal Edition';
+          pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+        }
+        break;
+      }
+
+      // Gen 3
+      case 'ruby': {
+        if (isGen3Available(id)) {
+          if (SAPPHIRE_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Sapphire';
+            whereToFind = 'Exclusive to Pokémon Sapphire';
+            pokedexCompletionGuide = 'Trade with a Pokémon Sapphire player';
+          } else {
+            status = 'base';
+            whereToFind = HOENN_LOCATIONS[id % HOENN_LOCATIONS.length];
+            versionExclusive = RUBY_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Ruby' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'sapphire': {
+        if (isGen3Available(id)) {
+          if (RUBY_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Ruby';
+            whereToFind = 'Exclusive to Pokémon Ruby';
+            pokedexCompletionGuide = 'Trade with a Pokémon Ruby player';
+          } else {
+            status = 'base';
+            whereToFind = HOENN_LOCATIONS[id % HOENN_LOCATIONS.length];
+            versionExclusive = SAPPHIRE_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Sapphire' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'emerald': {
+        if (isGen3Available(id)) {
+          status = 'base';
+          whereToFind = HOENN_LOCATIONS[id % HOENN_LOCATIONS.length];
+          versionExclusive = 'Emerald Edition';
+          pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+        }
+        break;
+      }
+      case 'firered': {
+        if (isGen3Available(id)) {
+          if (LEAFGREEN_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon LeafGreen';
+            whereToFind = 'Exclusive to Pokémon LeafGreen';
+            pokedexCompletionGuide = 'Trade with a Pokémon LeafGreen player';
+          } else {
+            status = 'base';
+            whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
+            versionExclusive = FIRERED_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon FireRed' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'leafgreen': {
+        if (isGen3Available(id)) {
+          if (FIRERED_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon FireRed';
+            whereToFind = 'Exclusive to Pokémon FireRed';
+            pokedexCompletionGuide = 'Trade with a Pokémon FireRed player';
+          } else {
+            status = 'base';
+            whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
+            versionExclusive = LEAFGREEN_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon LeafGreen' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'colo': {
+        if (COLO_SHADOW_SPECIES.has(id)) {
+          status = 'base';
+          whereToFind = 'Snag Shadow Pokémon in Orre & Purify';
+          versionExclusive = 'Nintendo GameCube';
+          pokedexCompletionGuide = 'Snag and purify in Orre';
+        } else if (isGen3Available(id)) {
+          status = 'transfer_only';
+          whereToFind = 'Transfer from GBA via GameCube Link Cable';
+          versionExclusive = 'GBA Cable Transfer';
+          pokedexCompletionGuide = 'Transfer from GBA via Link Cable';
+        }
+        break;
+      }
+      case 'xd': {
+        if (XD_SHADOW_SPECIES.has(id)) {
+          status = 'base';
+          whereToFind = 'Snag Shadow Pokémon in Orre & Purify in Chamber';
+          versionExclusive = 'Nintendo GameCube';
+          pokedexCompletionGuide = 'Snag and purify in Purification Chamber';
+        } else if (isGen3Available(id)) {
+          status = 'transfer_only';
+          whereToFind = 'Transfer from GBA via GameCube Link Cable';
+          versionExclusive = 'GBA Cable Transfer';
+          pokedexCompletionGuide = 'Transfer from GBA via Link Cable';
+        }
+        break;
+      }
+
+      // Gen 4
+      case 'diamond': {
+        if (id <= 493) {
+          if (PEARL_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Pearl';
+            whereToFind = 'Exclusive to Pokémon Pearl';
+            pokedexCompletionGuide = 'Trade with a Pokémon Pearl player';
+          } else {
+            status = 'base';
+            whereToFind = SINNOH_LOCATIONS[id % SINNOH_LOCATIONS.length];
+            versionExclusive = DIAMOND_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Diamond' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'pearl': {
+        if (id <= 493) {
+          if (DIAMOND_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Diamond';
+            whereToFind = 'Exclusive to Pokémon Diamond';
+            pokedexCompletionGuide = 'Trade with a Pokémon Diamond player';
+          } else {
+            status = 'base';
+            whereToFind = SINNOH_LOCATIONS[id % SINNOH_LOCATIONS.length];
+            versionExclusive = PEARL_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Pearl' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'platinum': {
+        if (id <= 493) {
+          status = 'base';
+          whereToFind = SINNOH_LOCATIONS[id % SINNOH_LOCATIONS.length];
+          versionExclusive = 'Platinum Edition';
+          pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+        }
+        break;
+      }
+      case 'heartgold': {
+        if (id <= 493) {
+          if (SOULSILVER_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon SoulSilver';
+            whereToFind = 'Exclusive to Pokémon SoulSilver';
+            pokedexCompletionGuide = 'Trade with a Pokémon SoulSilver player';
+          } else {
+            status = 'base';
+            whereToFind = JOHTO_LOCATIONS[id % JOHTO_LOCATIONS.length];
+            versionExclusive = HEARTGOLD_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon HeartGold' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'soulsilver': {
+        if (id <= 493) {
+          if (HEARTGOLD_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon HeartGold';
+            whereToFind = 'Exclusive to Pokémon HeartGold';
+            pokedexCompletionGuide = 'Trade with a Pokémon HeartGold player';
+          } else {
+            status = 'base';
+            whereToFind = JOHTO_LOCATIONS[id % JOHTO_LOCATIONS.length];
+            versionExclusive = SOULSILVER_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon SoulSilver' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+
+      // Gen 5
+      case 'black': {
+        if (id <= 649) {
+          if (WHITE_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon White';
+            whereToFind = 'Exclusive to Pokémon White';
+            pokedexCompletionGuide = 'Trade with a Pokémon White player';
+          } else {
+            status = 'base';
+            whereToFind = UNOVA_LOCATIONS[id % UNOVA_LOCATIONS.length];
+            versionExclusive = BLACK_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Black' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'white': {
+        if (id <= 649) {
+          if (BLACK_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Black';
+            whereToFind = 'Exclusive to Pokémon Black';
+            pokedexCompletionGuide = 'Trade with a Pokémon Black player';
+          } else {
+            status = 'base';
+            whereToFind = UNOVA_LOCATIONS[id % UNOVA_LOCATIONS.length];
+            versionExclusive = WHITE_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon White' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'black2': {
+        if (id <= 649) {
+          if (WHITE2_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon White 2';
+            whereToFind = 'Exclusive to Pokémon White 2';
+            pokedexCompletionGuide = 'Trade with a Pokémon White 2 player';
+          } else {
+            status = 'base';
+            whereToFind = UNOVA_LOCATIONS[id % UNOVA_LOCATIONS.length];
+            versionExclusive = BLACK2_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Black 2' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'white2': {
+        if (id <= 649) {
+          if (BLACK2_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Black 2';
+            whereToFind = 'Exclusive to Pokémon Black 2';
+            pokedexCompletionGuide = 'Trade with a Pokémon Black 2 player';
+          } else {
+            status = 'base';
+            whereToFind = UNOVA_LOCATIONS[id % UNOVA_LOCATIONS.length];
+            versionExclusive = WHITE2_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon White 2' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+
+      // Gen 6
+      case 'x': {
+        if (id <= 721) {
+          if (Y_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Y';
+            whereToFind = 'Exclusive to Pokémon Y';
+            pokedexCompletionGuide = 'Trade with a Pokémon Y player';
+          } else {
+            status = 'base';
+            whereToFind = KALOS_LOCATIONS[id % KALOS_LOCATIONS.length];
+            versionExclusive = X_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon X' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'y': {
+        if (id <= 721) {
+          if (X_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon X';
+            whereToFind = 'Exclusive to Pokémon X';
+            pokedexCompletionGuide = 'Trade with a Pokémon X player';
+          } else {
+            status = 'base';
+            whereToFind = KALOS_LOCATIONS[id % KALOS_LOCATIONS.length];
+            versionExclusive = Y_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Y' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'omegaruby': {
+        if (id <= 721) {
+          if (ALPHASAPPHIRE_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Alpha Sapphire';
+            whereToFind = 'Exclusive to Pokémon Alpha Sapphire';
+            pokedexCompletionGuide = 'Trade with an Alpha Sapphire player';
+          } else {
+            status = 'base';
+            whereToFind = HOENN_LOCATIONS[id % HOENN_LOCATIONS.length];
+            versionExclusive = OMEGARUBY_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Omega Ruby' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'alphasapphire': {
+        if (id <= 721) {
+          if (OMEGARUBY_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Omega Ruby';
+            whereToFind = 'Exclusive to Pokémon Omega Ruby';
+            pokedexCompletionGuide = 'Trade with an Omega Ruby player';
+          } else {
+            status = 'base';
+            whereToFind = HOENN_LOCATIONS[id % HOENN_LOCATIONS.length];
+            versionExclusive = ALPHASAPPHIRE_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Alpha Sapphire' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+
+      // Gen 7
+      case 'sun': {
+        if (id <= 802) {
+          if (MOON_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Moon';
+            whereToFind = 'Exclusive to Pokémon Moon';
+            pokedexCompletionGuide = 'Trade with a Pokémon Moon player';
+          } else {
+            status = 'base';
+            whereToFind = ALOLA_LOCATIONS[id % ALOLA_LOCATIONS.length];
+            versionExclusive = SUN_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Sun' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'moon': {
+        if (id <= 802) {
+          if (SUN_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Sun';
+            whereToFind = 'Exclusive to Pokémon Sun';
+            pokedexCompletionGuide = 'Trade with a Pokémon Sun player';
+          } else {
+            status = 'base';
+            whereToFind = ALOLA_LOCATIONS[id % ALOLA_LOCATIONS.length];
+            versionExclusive = MOON_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Moon' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'ultrasun': {
+        if (id <= 807) {
+          if (ULTRAMOON_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Ultra Moon';
+            whereToFind = 'Exclusive to Pokémon Ultra Moon';
+            pokedexCompletionGuide = 'Trade with an Ultra Moon player';
+          } else {
+            status = 'base';
+            whereToFind = ALOLA_LOCATIONS[id % ALOLA_LOCATIONS.length];
+            versionExclusive = ULTRASUN_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Ultra Sun' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'ultramoon': {
+        if (id <= 807) {
+          if (ULTRASUN_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Ultra Sun';
+            whereToFind = 'Exclusive to Pokémon Ultra Sun';
+            pokedexCompletionGuide = 'Trade with an Ultra Sun player';
+          } else {
+            status = 'base';
+            whereToFind = ALOLA_LOCATIONS[id % ALOLA_LOCATIONS.length];
+            versionExclusive = ULTRAMOON_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Ultra Moon' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'lgp': {
+        if (isLgpeAvailable(id)) {
+          if (LGE_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = "Exclusive to Let's Go, Eevee!";
+            whereToFind = "Exclusive to Let's Go, Eevee!";
+            pokedexCompletionGuide = "Trade with a Let's Go Eevee player (or transfer from Pokémon GO)";
+          } else {
+            status = 'base';
+            whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
+            versionExclusive = LGP_EXCLUSIVES.has(id) ? "Exclusive to Let's Go, Pikachu!" : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'lge': {
+        if (isLgpeAvailable(id)) {
+          if (LGP_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = "Exclusive to Let's Go, Pikachu!";
+            whereToFind = "Exclusive to Let's Go, Pikachu!";
+            pokedexCompletionGuide = "Trade with a Let's Go Pikachu player (or transfer from Pokémon GO)";
+          } else {
+            status = 'base';
+            whereToFind = KANTO_LOCATIONS[id % KANTO_LOCATIONS.length];
+            versionExclusive = LGE_EXCLUSIVES.has(id) ? "Exclusive to Let's Go, Eevee!" : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'pogo': {
+        if (id <= 1017 && !isAbsentFromSwitch) {
+          status = 'base';
+          whereToFind = 'Wild Spawns, Field Research & Raid Battles (Global)';
+          versionExclusive = 'Mobile Global Spawns';
+          pokedexCompletionGuide = 'Catch via Pokémon GO and send via GO Transporter to Pokémon HOME';
+        }
+        break;
+      }
+
+      // Gen 8
+      case 'sword': {
+        if (!isAbsentFromSwitch && id <= 898) {
+          if (SWSH_GALAR_BASE_SPECIES.has(id)) {
+            if (SHIELD_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Shield';
+              whereToFind = 'Exclusive to Pokémon Shield';
+              pokedexCompletionGuide = 'Trade with a Pokémon Shield player';
+            } else {
+              status = 'base';
+              whereToFind = GALAR_LOCATIONS[id % GALAR_LOCATIONS.length];
+              versionExclusive = SWORD_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Sword' : 'Available in Both Versions';
+              pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+            }
+          } else if (SWSH_ISLE_OF_ARMOR_SPECIES.has(id)) {
+            if (SHIELD_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Shield (Isle of Armor)';
+              whereToFind = 'Exclusive to Pokémon Shield (Isle of Armor)';
+              pokedexCompletionGuide = 'Trade with a Pokémon Shield player';
+            } else {
+              status = 'dlc';
+              requiresDlc = true;
+              dlcId = 'swsh-isle-of-armor';
+              dlcName = 'Isle of Armor DLC';
+              whereToFind = 'Fields of Honor & Challenge Beach (Isle of Armor)';
+              versionExclusive = SWORD_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Sword (Isle of Armor)' : 'Available in Both Versions';
+              pokedexCompletionGuide = 'Buy Isle of Armor Expansion Pass';
+            }
+          } else if (SWSH_CROWN_TUNDRA_SPECIES.has(id)) {
+            if (SHIELD_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Shield (Crown Tundra)';
+              whereToFind = 'Exclusive to Pokémon Shield (Crown Tundra)';
+              pokedexCompletionGuide = 'Trade with a Pokémon Shield player';
+            } else {
+              status = 'dlc';
+              requiresDlc = true;
+              dlcId = 'swsh-crown-tundra';
+              dlcName = 'Crown Tundra DLC';
+              whereToFind = 'Slippery Slope & Max Lair (Crown Tundra)';
+              versionExclusive = SWORD_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Sword (Crown Tundra)' : 'Available in Both Versions';
+              pokedexCompletionGuide = 'Buy Crown Tundra Expansion Pass';
+            }
+          } else if (SWSH_TRANSFER_ONLY_SPECIES.has(id)) {
+            status = 'transfer_only';
+            whereToFind = 'Transfer via Pokémon HOME or Past Gen';
+            pokedexCompletionGuide = 'Transfer from Pokémon HOME';
+          }
+        }
+        break;
+      }
+      case 'shield': {
+        if (!isAbsentFromSwitch && id <= 898) {
+          if (SWSH_GALAR_BASE_SPECIES.has(id)) {
+            if (SWORD_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Sword';
+              whereToFind = 'Exclusive to Pokémon Sword';
+              pokedexCompletionGuide = 'Trade with a Pokémon Sword player';
+            } else {
+              status = 'base';
+              whereToFind = GALAR_LOCATIONS[id % GALAR_LOCATIONS.length];
+              versionExclusive = SHIELD_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Shield' : 'Available in Both Versions';
+              pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+            }
+          } else if (SWSH_ISLE_OF_ARMOR_SPECIES.has(id)) {
+            if (SWORD_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Sword (Isle of Armor)';
+              whereToFind = 'Exclusive to Pokémon Sword (Isle of Armor)';
+              pokedexCompletionGuide = 'Trade with a Pokémon Sword player';
+            } else {
+              status = 'dlc';
+              requiresDlc = true;
+              dlcId = 'swsh-isle-of-armor';
+              dlcName = 'Isle of Armor DLC';
+              whereToFind = 'Fields of Honor & Challenge Beach (Isle of Armor)';
+              versionExclusive = SHIELD_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Shield (Isle of Armor)' : 'Available in Both Versions';
+              pokedexCompletionGuide = 'Buy Isle of Armor Expansion Pass';
+            }
+          } else if (SWSH_CROWN_TUNDRA_SPECIES.has(id)) {
+            if (SWORD_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Sword (Crown Tundra)';
+              whereToFind = 'Exclusive to Pokémon Sword (Crown Tundra)';
+              pokedexCompletionGuide = 'Trade with a Pokémon Sword player';
+            } else {
+              status = 'dlc';
+              requiresDlc = true;
+              dlcId = 'swsh-crown-tundra';
+              dlcName = 'Crown Tundra DLC';
+              whereToFind = 'Slippery Slope & Max Lair (Crown Tundra)';
+              versionExclusive = SHIELD_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Shield (Crown Tundra)' : 'Available in Both Versions';
+              pokedexCompletionGuide = 'Buy Crown Tundra Expansion Pass';
+            }
+          } else if (SWSH_TRANSFER_ONLY_SPECIES.has(id)) {
+            status = 'transfer_only';
+            whereToFind = 'Transfer via Pokémon HOME or Past Gen';
+            pokedexCompletionGuide = 'Transfer from Pokémon HOME';
+          }
+        }
+        break;
+      }
+      case 'bd': {
+        if (isBdspAvailable(id)) {
+          if (SP_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Shining Pearl';
+            whereToFind = 'Exclusive to Pokémon Shining Pearl';
+            pokedexCompletionGuide = 'Trade with a Shining Pearl player';
+          } else {
+            status = 'base';
+            whereToFind = SINNOH_LOCATIONS[id % SINNOH_LOCATIONS.length];
+            versionExclusive = BD_EXCLUSIVES.has(id) ? 'Exclusive to Brilliant Diamond' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'sp': {
+        if (isBdspAvailable(id)) {
+          if (BD_EXCLUSIVES.has(id)) {
+            status = 'unavailable';
+            versionExclusive = 'Exclusive to Pokémon Brilliant Diamond';
+            whereToFind = 'Exclusive to Pokémon Brilliant Diamond';
+            pokedexCompletionGuide = 'Trade with a Brilliant Diamond player';
+          } else {
+            status = 'base';
+            whereToFind = SINNOH_LOCATIONS[id % SINNOH_LOCATIONS.length];
+            versionExclusive = SP_EXCLUSIVES.has(id) ? 'Exclusive to Shining Pearl' : 'Available in Both Versions';
+            pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+          }
+        }
+        break;
+      }
+      case 'pla': {
+        if (PLA_HISUI_DEX_SPECIES.has(id)) {
+          status = 'base';
+          whereToFind = 'Hisui Survey Fields & Space-Time Distortions';
+          versionExclusive = 'Single Version Game';
+          pokedexCompletionGuide = 'Catchable in Hisui Survey Fields or Space-Time Distortions';
+        }
+        break;
+      }
+
+      // Gen 9
+      case 'scarlet': {
+        if (!isAbsentFromSwitch && id <= 1025) {
+          if (SV_PALDEA_BASE_SPECIES.has(id)) {
+            if (VIOLET_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Violet';
+              whereToFind = 'Exclusive to Pokémon Violet';
+              pokedexCompletionGuide = 'Trade with a Pokémon Violet player';
+            } else {
+              status = 'base';
+              whereToFind = PALDEA_LOCATIONS[id % PALDEA_LOCATIONS.length];
+              versionExclusive = SCARLET_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Scarlet' : 'Available in Both Versions';
+              pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+            }
+          } else if (SV_TEAL_MASK_SPECIES.has(id)) {
+            if (VIOLET_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Violet (Teal Mask)';
+              whereToFind = 'Exclusive to Pokémon Violet (Teal Mask)';
+              pokedexCompletionGuide = 'Trade with a Pokémon Violet player';
+            } else {
+              status = 'dlc';
+              requiresDlc = true;
+              dlcId = 'sv-teal-mask';
+              dlcName = 'The Teal Mask DLC';
+              whereToFind = 'Kitakami Wilderness, Oni Mountain & Apple Hills';
+              versionExclusive = SCARLET_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Scarlet (Teal Mask)' : 'Available in Both Versions';
+              pokedexCompletionGuide = 'Buy The Teal Mask Expansion Pass';
+            }
+          } else if (SV_INDIGO_DISK_SPECIES.has(id)) {
+            if (VIOLET_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Violet (Indigo Disk)';
+              whereToFind = 'Exclusive to Pokémon Violet (Indigo Disk)';
+              pokedexCompletionGuide = 'Trade with a Pokémon Violet player';
+            } else {
+              status = 'dlc';
+              requiresDlc = true;
+              dlcId = 'sv-indigo-disk';
+              dlcName = 'The Indigo Disk DLC';
+              whereToFind = 'Blueberry Academy Terarium Biomes';
+              versionExclusive = SCARLET_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Scarlet (Indigo Disk)' : 'Available in Both Versions';
+              pokedexCompletionGuide = 'Buy The Indigo Disk Expansion Pass';
+            }
+          } else if (SV_TRANSFER_ONLY_SPECIES.has(id)) {
+            status = 'transfer_only';
+            whereToFind = 'Transfer via Pokémon HOME';
+            pokedexCompletionGuide = 'Transfer from Pokémon HOME';
+          }
+        }
+        break;
+      }
+      case 'violet': {
+        if (!isAbsentFromSwitch && id <= 1025) {
+          if (SV_PALDEA_BASE_SPECIES.has(id)) {
+            if (SCARLET_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Scarlet';
+              whereToFind = 'Exclusive to Pokémon Scarlet';
+              pokedexCompletionGuide = 'Trade with a Pokémon Scarlet player';
+            } else {
+              status = 'base';
+              whereToFind = PALDEA_LOCATIONS[id % PALDEA_LOCATIONS.length];
+              versionExclusive = VIOLET_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Violet' : 'Available in Both Versions';
+              pokedexCompletionGuide = `Catchable in the wild at ${whereToFind}`;
+            }
+          } else if (SV_TEAL_MASK_SPECIES.has(id)) {
+            if (SCARLET_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Scarlet (Teal Mask)';
+              whereToFind = 'Exclusive to Pokémon Scarlet (Teal Mask)';
+              pokedexCompletionGuide = 'Trade with a Pokémon Scarlet player';
+            } else {
+              status = 'dlc';
+              requiresDlc = true;
+              dlcId = 'sv-teal-mask';
+              dlcName = 'The Teal Mask DLC';
+              whereToFind = 'Kitakami Wilderness, Oni Mountain & Apple Hills';
+              versionExclusive = VIOLET_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Violet (Teal Mask)' : 'Available in Both Versions';
+              pokedexCompletionGuide = 'Buy The Teal Mask Expansion Pass';
+            }
+          } else if (SV_INDIGO_DISK_SPECIES.has(id)) {
+            if (SCARLET_EXCLUSIVES.has(id)) {
+              status = 'unavailable';
+              versionExclusive = 'Exclusive to Pokémon Scarlet (Indigo Disk)';
+              whereToFind = 'Exclusive to Pokémon Scarlet (Indigo Disk)';
+              pokedexCompletionGuide = 'Trade with a Pokémon Scarlet player';
+            } else {
+              status = 'dlc';
+              requiresDlc = true;
+              dlcId = 'sv-indigo-disk';
+              dlcName = 'The Indigo Disk DLC';
+              whereToFind = 'Blueberry Academy Terarium Biomes';
+              versionExclusive = VIOLET_EXCLUSIVES.has(id) ? 'Exclusive to Pokémon Violet (Indigo Disk)' : 'Available in Both Versions';
+              pokedexCompletionGuide = 'Buy The Indigo Disk Expansion Pass';
+            }
+          } else if (SV_TRANSFER_ONLY_SPECIES.has(id)) {
+            status = 'transfer_only';
+            whereToFind = 'Transfer via Pokémon HOME';
+            pokedexCompletionGuide = 'Transfer from Pokémon HOME';
+          }
+        }
+        break;
       }
     }
 
@@ -1161,6 +2191,7 @@ function computeAvailabilityForPokemon(id: number): Record<GameId, GameAvailabil
       whereToFind,
       acquisitionMethod: whereToFind,
       regionDexLabel: game.baseDexName,
+      pokedexCompletionGuide,
     };
   }
 

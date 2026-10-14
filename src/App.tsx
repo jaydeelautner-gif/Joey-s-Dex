@@ -37,6 +37,7 @@ import {
 import {
   formatOriginSourceLabel,
   formatStorageLocationLabel,
+  generatePokeId,
   type PokemonInstance,
 } from './data/pokemonInventoryData';
 import { PokemonSprite } from './components/PokemonSprite';
@@ -49,7 +50,7 @@ import { HomeView } from './components/HomeView';
 import { SettingsView } from './components/SettingsView';
 import { RegisterPokemonView } from './components/RegisterPokemonView';
 import { InventoryView } from './components/InventoryView';
-import { SpecimenTrainerCardModal } from './components/SpecimenTrainerCardModal';
+import { PokepetTrainerCardModal } from './components/PokepetTrainerCardModal';
 import { GameLogoBadge } from './components/GameLogoBadge';
 import {
   auth,
@@ -59,6 +60,10 @@ import {
   subscribeToUserDexProfile,
   saveUserDexProfile,
   fetchPublicDexProfile,
+  searchPokepetByPokeId,
+  savePokepetToUniversalDatabase,
+  updatePokepetInUniversalDatabase,
+  deletePokepetFromUniversalDatabase,
   type User,
   type UserDexProfileData,
   type SerializedPokemonInstance,
@@ -298,6 +303,26 @@ export function App() {
     }
   });
 
+  const [includePokemonGoInSuggestions, setIncludePokemonGoInSuggestions] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('homedex_include_pogo_suggestions') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleIncludePokemonGoInSuggestions = useCallback(() => {
+    setIncludePokemonGoInSuggestions((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('homedex_include_pogo_suggestions', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
   // Theme State
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try {
@@ -536,9 +561,15 @@ export function App() {
     setCurrentPage(1);
   }, [selectedGame, selectedGen, statusFilter, availFilter, searchQuery]);
 
-  // Add a newly registered specimen instance to the database
+  // Add a newly registered pokepet instance to the database
   const handleSaveNewInstance = useCallback((newInstance: PokemonInstance) => {
     setInventory((prev) => [newInstance, ...prev]);
+
+    // Save to central universal database
+    const ownerId = user?.uid || (localStorage.getItem('homedex_guest_uuid') || 'guest_' + Math.random().toString(36).slice(2, 10));
+    savePokepetToUniversalDatabase(newInstance, ownerId, trainerName).catch((err) => {
+      console.warn('Failed to save pokepet to universal database:', err);
+    });
 
     // 1. Variant caught
     setCaughtVariants((prev) =>
@@ -582,13 +613,18 @@ export function App() {
         };
       });
     }
-  }, []);
+  }, [user, trainerName]);
 
   // Update existing instance
   const handleUpdateInstance = useCallback((updatedInstance: PokemonInstance) => {
     setInventory((prev) =>
       prev.map((item) => (item.pokeId === updatedInstance.pokeId ? updatedInstance : item))
     );
+
+    const ownerId = user?.uid || (localStorage.getItem('homedex_guest_uuid') || 'guest');
+    updatePokepetInUniversalDatabase(updatedInstance, ownerId, trainerName).catch((err) => {
+      console.warn('Failed to update pokepet in universal database:', err);
+    });
 
     if (updatedInstance.storedInHome && updatedInstance.isInLivingBox) {
       setLivingIds((prev) =>
@@ -607,11 +643,16 @@ export function App() {
         });
       }
     }
-  }, []);
+  }, [user, trainerName]);
 
   // Delete instance:
-  // "If the last pokemon in the inventory is deleted then the pokemon is no longer marked as caught."
+  // "The only way for it to be marked as uncaught is to delete the last registered pokepet of that Pokémon’s species by the user."
   const handleDeleteInstance = useCallback((pokeId: string) => {
+    // Delete from universal database
+    deletePokepetFromUniversalDatabase(pokeId).catch((err) => {
+      console.warn('Failed to delete pokepet from universal database:', err);
+    });
+
     setInventory((prev) => {
       const target = prev.find((item) => item.pokeId === pokeId);
       if (!target) return prev;
@@ -676,13 +717,19 @@ export function App() {
   }, []);
 
   const handleLookupPokeId = useCallback(
-    (pokeIdToFind: string) => {
+    async (pokeIdToFind: string): Promise<string | null> => {
       const cleanId = pokeIdToFind.trim().toUpperCase();
+      if (!cleanId.startsWith('ID') || cleanId.length !== 12) {
+        const errorMsg = 'POKEID must be exactly 12 characters and start with "ID" (e.g. ID8F3K9L2M4P).';
+        setToast({ message: errorMsg, type: 'error' });
+        return errorMsg;
+      }
+
       // 1. Search local user inventory
       const localMatch = inventory.find((inv) => inv.pokeId.toUpperCase() === cleanId);
       if (localMatch) {
         setActiveTrainerCardInstance(localMatch);
-        return;
+        return null;
       }
 
       // 2. Search shared profile data
@@ -695,68 +742,34 @@ export function App() {
             ...profileMatch,
             nickname: profileMatch.nickname || '',
           } as PokemonInstance);
-          return;
+          return null;
         }
       }
 
-      // 3. Search cached local registry of known specimens
+      // 3. Search central Firestore database of registered pokepets
       try {
-        const rawReg = localStorage.getItem('homedex_known_specimens');
-        if (rawReg) {
-          const reg: Record<string, PokemonInstance> = JSON.parse(rawReg);
-          if (reg[cleanId]) {
-            setActiveTrainerCardInstance(reg[cleanId]);
-            return;
-          }
+        const result = await searchPokepetByPokeId(
+          cleanId,
+          inventory,
+          trainerName || 'Trainer'
+        );
+        if (result.success && result.pokepet) {
+          setActiveTrainerCardInstance(result.pokepet as PokemonInstance);
+          return null;
+        } else {
+          const errorMsg =
+            result.error ||
+            `POKEID "${cleanId}" does not exist in the database. Only registered pet Pokémon have a POKEID.`;
+          setToast({ message: errorMsg, type: 'error' });
+          return errorMsg;
         }
-      } catch {
-        // ignore
-      }
-
-      // 4. If cleanId is 12 chars starting with ID, resolve and present the specimen
-      if (cleanId.startsWith('ID') && cleanId.length === 12) {
-        let hash = 0;
-        for (let i = 2; i < cleanId.length; i++) {
-          hash = (hash * 31 + cleanId.charCodeAt(i)) >>> 0;
-        }
-        const pId = (hash % 1025) + 1;
-        const mon = dex.find((p) => p.id === pId) || dex[0];
-        const assignedGame = ALL_GAME_IDS[hash % ALL_GAME_IDS.length];
-        const isHomeGift = hash % 5 === 0;
-
-        const resolvedInstance: PokemonInstance = {
-          pokeId: cleanId,
-          pokemonId: mon.id,
-          nickname: '',
-          level: (hash % 80) + 20,
-          gender: hash % 2 === 0 ? 'male' : 'female',
-          variantId: `${mon.id}:base`,
-          variantName: 'Original',
-          isShiny: hash % 8 === 0,
-          gameId: isHomeGift ? undefined : assignedGame,
-          isHomeGift,
-          isTraded: hash % 3 === 0,
-          storedInHome: true,
-          isInLivingBox: true,
-          livingBoxNumber: mon.boxNumber,
-          livingBoxSlot: mon.boxSlot,
-          createdAt: Date.now() - 86400000,
-          updatedAt: Date.now() - 86400000,
-        };
-
-        try {
-          const rawReg = localStorage.getItem('homedex_known_specimens');
-          const reg = rawReg ? JSON.parse(rawReg) : {};
-          reg[cleanId] = resolvedInstance;
-          localStorage.setItem('homedex_known_specimens', JSON.stringify(reg));
-        } catch {
-          // ignore
-        }
-
-        setActiveTrainerCardInstance(resolvedInstance);
+      } catch (err: any) {
+        const errorMsg = `Database lookup error: ${err?.message || 'Could not query registered pokepets.'}`;
+        setToast({ message: errorMsg, type: 'error' });
+        return errorMsg;
       }
     },
-    [inventory, sharedProfileData, dex]
+    [inventory, sharedProfileData, trainerName]
   );
 
   const handleSelectBoxVariant = useCallback((pokemonId: number, variantId: string) => {
@@ -1351,11 +1364,15 @@ export function App() {
                 shinySet={shinySet}
                 livingSet={livingSet}
                 ownedGames={ownedGames}
+                ownedDlcs={ownedDlcs}
                 gameCatches={gameCatches}
                 inventory={inventory}
+                boxSelectedGames={boxSelectedGamesMap}
+                includePokemonGoInSuggestions={includePokemonGoInSuggestions}
+                isGuest={!user}
+                onRequestAuth={() => handleGoogleSignIn()}
                 onSelectPokemon={(p) => setSelectedPokemon(p)}
                 onOpenFullPage={(p) => setFullPagePokemon(p)}
-                onToggleCaught={() => {}}
                 onNavigateToRegister={(pId) => {
                   setRegisterTargetPokemonId(pId);
                   setActiveTab('register');
@@ -1374,6 +1391,7 @@ export function App() {
                 dex={dex}
                 ownedGames={ownedGames}
                 inventory={inventory}
+                initialPokemonId={registerTargetPokemonId}
                 onSaveNewInstance={handleSaveNewInstance}
                 onOpenPokemonPage={(p) => setFullPagePokemon(p)}
                 onNavigateToInventory={() => setActiveTab('inventory')}
@@ -1813,6 +1831,8 @@ export function App() {
                 tallyGames={tallyGames}
                 onToggleTallyGame={handleToggleTallyGame}
                 onSetAllTallyGames={handleSetAllTallyGames}
+                includePokemonGoInSuggestions={includePokemonGoInSuggestions}
+                onToggleIncludePokemonGoInSuggestions={handleToggleIncludePokemonGoInSuggestions}
                 theme={theme}
                 onToggleTheme={(t) => setTheme(t)}
                 trainerName={displayTrainerName}
